@@ -14,6 +14,17 @@
     </nav>
 
     <main>
+
+      <div class="table-controls">
+        <ColumnSelector
+            :all-columns="columns[view]"
+            :visibility="columnVisibility[view]"
+            @toggle="toggleColumn"
+            @select-all="selectAllColumns"
+            @reset="resetColumns"
+        />
+      </div>
+
       <DataTable
           :title="view.toUpperCase()"
           :columns="columns[view]"
@@ -65,17 +76,29 @@ import axios from 'axios'
 import DataTable from './components/DataTable.vue'
 import EditModal from './components/EditModal.vue'
 import AddModal from './components/AddModal.vue'
+import ColumnSelector from './components/ColumnSelector.vue'
 
 const API = 'http://localhost:8081/api'
 
 export default {
-  components: { DataTable, EditModal, AddModal },
+  components: { DataTable, EditModal, AddModal, ColumnSelector },
   computed: {
     totalPagesDisplay() {
       return this.totalPages || 1
     },
     effectiveSortBy() {
       return this.sortBy || this.defaultSortBy[this.view]
+    },
+    visibleColumns() {
+      const view = this.view
+      const allCols = this.columns[view]
+      const visibility = this.columnVisibility[view]
+
+      // Filter nur sichtbare Spalten
+      return allCols.filter(col => {
+        // Default: alle Spalten sichtbar wenn nicht definiert
+        return visibility[col] !== false
+      })
     }
   },
   data() {
@@ -123,7 +146,16 @@ export default {
           'bpos_id', 'b_id', 's_id', 's_stamp', 'date_exported'
         ],
         log: ['id', 'dateCreated', 'level', 'info', 'sId', 'sStamp', 'aId', 'dateExported']
-      }
+      },
+
+      // Column visibility state
+      columnVisibility: {
+        analysis: {},
+        sample: {},
+        box: {},
+        boxpos: {},
+        log: {}
+      },
     }
   },
   watch: {
@@ -137,7 +169,10 @@ export default {
       this.loadData();
     }
   },
-  mounted() { this.loadData() },
+  mounted() {
+    this.loadColumnVisibility()
+    this.loadData()
+  },
   methods: {
     mapSortField(col) {
       if (!col) return 'id'
@@ -458,6 +493,46 @@ export default {
           alert(`Delete failed: ${err.response?.data?.message || err.message}`)
         }
       }
+    },
+
+    loadColumnVisibility() {
+      const saved = localStorage.getItem('columnVisibility')
+      if (saved) {
+        this.columnVisibility = JSON.parse(saved)
+      } else {
+        // Initialisiere mit allen Spalten sichtbar
+        Object.keys(this.columns).forEach(view => {
+          this.columnVisibility[view] = {}
+          this.columns[view].forEach(col => {
+            this.columnVisibility[view][col] = true
+          })
+        })
+      }
+    },
+
+    saveColumnVisibility() {
+      localStorage.setItem('columnVisibility', JSON.stringify(this.columnVisibility))
+    },
+
+    toggleColumn(col) {
+      this.columnVisibility[this.view][col] = !this.columnVisibility[this.view][col]
+      this.saveColumnVisibility()
+    },
+
+    selectAllColumns() {
+      const view = this.view
+      this.columns[view].forEach(col => {
+        this.columnVisibility[view][col] = true
+      })
+      this.saveColumnVisibility()
+    },
+
+    resetColumns() {
+      const view = this.view
+      this.columns[view].forEach(col => {
+        this.columnVisibility[view][col] = true
+      })
+      this.saveColumnVisibility()
     }
   }
 }
@@ -577,5 +652,13 @@ main {
   font-size: 14px;
   color: #374151;
 }
+
+.table-controls {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+
 
 </style>

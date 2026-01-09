@@ -8,9 +8,12 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import tgm.ac.at.gk911_informationssysteme_rest_backend.config.AuthController;
 import tgm.ac.at.gk911_informationssysteme_rest_backend.config.CorsConfig;
+import tgm.ac.at.gk911_informationssysteme_rest_backend.config.SecurityConfig;
 import tgm.ac.at.gk911_informationssysteme_rest_backend.controller.AnalysisController;
 import tgm.ac.at.gk911_informationssysteme_rest_backend.repository.AnalysisRepository;
 import tgm.ac.at.gk911_informationssysteme_rest_backend.repository.SampleRepository;
@@ -22,7 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @ActiveProfiles("test")
 @WebMvcTest(controllers = AnalysisController.class)
-@Import(CorsConfig.class)
+@Import({CorsConfig.class, SecurityConfig.class})
 class CorsConfigWebMvcTest {
 
     @Autowired
@@ -34,8 +37,12 @@ class CorsConfigWebMvcTest {
     @MockBean
     SampleRepository sampleRepository;
 
+    @MockBean
+    AuthController authController;
+
     @Test
     @DisplayName("CORS preflight on /api/** returns configured headers")
+    @WithMockUser
     void cors_preflight_ok() throws Exception {
         when(repository.findAll(any(org.springframework.data.domain.Pageable.class)))
                 .thenAnswer(inv -> new PageImpl<>(java.util.Collections.emptyList(), inv.getArgument(0), 0));
@@ -52,6 +59,7 @@ class CorsConfigWebMvcTest {
 
     @Test
     @DisplayName("Actual GET with Origin includes ACAO and exposed headers, without credentials")
+    @WithMockUser
     void cors_actual_get_ok() throws Exception {
         when(repository.findAll(any(org.springframework.data.domain.Pageable.class)))
                 .thenAnswer(inv -> new PageImpl<>(java.util.Collections.emptyList(), inv.getArgument(0), 0));
@@ -65,6 +73,7 @@ class CorsConfigWebMvcTest {
 
     @Test
     @DisplayName("CORS not applied outside /api/** mapping")
+    @WithMockUser
     void cors_not_applied_for_other_paths() throws Exception {
         mockMvc.perform(options("/not-api")
                         .header("Origin", "http://x.test")

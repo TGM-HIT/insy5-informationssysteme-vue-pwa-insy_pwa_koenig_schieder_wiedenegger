@@ -5,8 +5,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import tgm.ac.at.gk911_informationssysteme_rest_backend.config.AuthController;
+import tgm.ac.at.gk911_informationssysteme_rest_backend.config.SecurityConfig;
 import tgm.ac.at.gk911_informationssysteme_rest_backend.controller.TestController;
 import tgm.ac.at.gk911_informationssysteme_rest_backend.repository.*;
 
@@ -20,6 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @ActiveProfiles("test")
 @WebMvcTest(controllers = TestController.class)
+@Import(SecurityConfig.class)
 class TestControllerWebMvcTest {
 
     @Autowired
@@ -27,6 +31,9 @@ class TestControllerWebMvcTest {
 
     @MockBean
     EntityManager entityManager;
+
+    @MockBean
+    AuthController authController;
 
     @MockBean(name = "sampleRepository")
     SampleRepository sampleRepository;

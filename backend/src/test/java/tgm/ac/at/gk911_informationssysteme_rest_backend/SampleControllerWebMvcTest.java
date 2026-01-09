@@ -5,9 +5,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import tgm.ac.at.gk911_informationssysteme_rest_backend.config.AuthController;
+import tgm.ac.at.gk911_informationssysteme_rest_backend.config.SecurityConfig;
 import tgm.ac.at.gk911_informationssysteme_rest_backend.controller.SampleController;
 import tgm.ac.at.gk911_informationssysteme_rest_backend.entity.Sample;
 import tgm.ac.at.gk911_informationssysteme_rest_backend.entity.SampleId;
@@ -25,6 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @ActiveProfiles("test")
 @WebMvcTest(controllers = SampleController.class)
+@Import(SecurityConfig.class)
 class SampleControllerWebMvcTest {
 
     @Autowired
@@ -32,6 +36,9 @@ class SampleControllerWebMvcTest {
 
     @MockBean
     SampleRepository repository;
+
+    @MockBean
+    AuthController authController;
 
     @Test
     @DisplayName("GET /api/sample returns 200 and empty list")

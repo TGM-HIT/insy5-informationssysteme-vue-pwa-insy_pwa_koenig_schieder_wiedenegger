@@ -14,7 +14,8 @@
     "test:open": "cypress open",
     "test:report": "open cypress/reports/html/index.html",
     "test:sumary": "cypress run && node generate-report-summary.js",
-    "update-badge": "node update-badge.cjs"
+    "update-badge": "node update-badge.cjs",
+    "preview": "vite preview"
   },
   "dependencies": {
     "axios": "^1.7.0",

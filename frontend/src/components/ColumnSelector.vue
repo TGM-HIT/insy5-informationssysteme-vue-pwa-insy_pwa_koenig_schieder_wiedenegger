@@ -196,6 +196,10 @@ export default {
   background: #f3f4f6;
 }
 
+.column-item span {
+  color: #111827; /* Always black */
+}
+
 .column-item input[type="checkbox"] {
   margin-right: 10px;
   cursor: pointer;

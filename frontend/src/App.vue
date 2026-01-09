@@ -564,18 +564,27 @@ export default {
     },
 
     loadColumnVisibility() {
-      const saved = localStorage.getItem('columnVisibility')
+      const saved = localStorage.getItem('columnVisibility');
+      let savedVisibility = {};
       if (saved) {
-        this.columnVisibility = JSON.parse(saved)
-      } else {
-        // Initialisiere mit allen Spalten sichtbar
-        Object.keys(this.columns).forEach(view => {
-          this.columnVisibility[view] = {}
-          this.columns[view].forEach(col => {
-            this.columnVisibility[view][col] = true
-          })
-        })
+        try {
+          savedVisibility = JSON.parse(saved);
+        } catch (e) {
+          console.error("Could not parse column visibility from localStorage", e);
+          savedVisibility = {};
+        }
       }
+
+      Object.keys(this.columns).forEach(view => {
+        const defaultViewVisibility = {};
+        this.columns[view].forEach(col => {
+          defaultViewVisibility[col] = true;
+        });
+
+        const savedViewVisibility = savedVisibility[view] || {};
+
+        this.columnVisibility[view] = { ...defaultViewVisibility, ...savedViewVisibility };
+      });
     },
 
     saveColumnVisibility() {
@@ -664,6 +673,10 @@ nav {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
+.nav-brand {
+  flex-shrink: 0;
+}
+
 .nav-brand h1 {
   font-size: 22px;
   font-weight: 700;
@@ -672,6 +685,8 @@ nav {
 
 .nav-links {
   display: flex;
+  justify-content: center;
+  flex-grow: 1;
   gap: 6px;
 }
 

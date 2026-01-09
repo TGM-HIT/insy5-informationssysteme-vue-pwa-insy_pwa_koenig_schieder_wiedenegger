@@ -66,7 +66,7 @@ import DataTable from './components/DataTable.vue'
 import EditModal from './components/EditModal.vue'
 import AddModal from './components/AddModal.vue'
 
-const API = 'http://localhost:8081/api'
+const API = '/api'
 
 export default {
   components: { DataTable, EditModal, AddModal },

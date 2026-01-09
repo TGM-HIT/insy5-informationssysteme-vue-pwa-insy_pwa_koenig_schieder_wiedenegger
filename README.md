@@ -198,6 +198,7 @@ Um Service Worker nutzen zu können, ist HTTPS notwendig. Nach der Umstellung ka
     ```
     Dadurch wird automatisch HTTPS verwendet und "Mixed Content" wird vermieden.
 
+---
 
 # Login-System für Lab Data Management PWA
 
@@ -303,52 +304,6 @@ runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 | Container | Docker, Docker Compose |
 | Build-Tool | Gradle (Backend), npm (Frontend) |
 
----
-
-## Projektstruktur
-
-```
-├── backend/
-│   ├── src/main/java/.../
-│   │   ├── config/
-│   │   │   └── SecurityConfig.java      # Spring Security Konfiguration
-│   │   └── controller/
-│   │       └── AuthController.java      # Login-Endpoint
-│   └── build.gradle                     # Dependencies
-│
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   └── LoginForm.vue            # Login-Formular UI
-│   │   ├── services/
-│   │   │   ├── api.js                   # Axios mit Interceptors
-│   │   │   └── AuthService.js           # Login/Logout Logik
-│   │   ├── App.vue                      # Haupt-Komponente mit Login-Integration
-│   │   └── main.js                      # Vuetify Setup
-│   ├── package.json
-│   └── package-lock.json
-│
-└── docker-compose.yml
-```
-
----
-
-## Installation & Start
-
-### 1. Backend bauen
-```bash
-cd backend
-./gradlew bootJar
-```
-
-### 2. Docker Container starten
-```bash
-docker-compose up --build -d
-```
-
-### 3. Anwendung öffnen
-- Frontend: http://localhost:8082
-- Backend API: http://localhost:8081/api
 
 ---
 
@@ -410,16 +365,7 @@ docker-compose up --build -d
 
 ---
 
-## Weiterentwicklung (TODO)
 
-- [ ] Echte JWT Token Generierung (aktuell: `simple-token-{username}`)
-- [ ] Rollenbasierte Zugriffskontrolle (RBAC)
-- [ ] Token-Ablauf und Refresh-Token
-- [ ] Benutzer in Datenbank statt In-Memory
-- [ ] Passwort-Änderung Funktion
-- [ ] PWA Features (Service Worker, Offline-Support)
-
----
 
 
 ## Quellen

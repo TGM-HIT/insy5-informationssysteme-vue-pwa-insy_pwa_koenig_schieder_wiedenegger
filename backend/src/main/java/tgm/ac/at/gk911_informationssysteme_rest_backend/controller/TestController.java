@@ -17,7 +17,6 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 public class TestController {
 
-    @PersistenceContext
     private EntityManager entityManager;
 
     @Autowired(required = false)
@@ -27,13 +26,30 @@ public class TestController {
     private BoxRepository boxRepository;
 
     @Autowired(required = false)
-    private BoxPosRepository boxPosRepository;  // HINZUGEFÜGT
+    private BoxPosRepository boxPosRepository;
 
     @Autowired(required = false)
     private LogRepository logRepository;
 
     @Autowired(required = false)
     private AnalysisRepository analysisRepository;
+
+    // Constructor injection für EntityManager (besser testbar)
+    @Autowired(required = false)
+    public void setEntityManager(EntityManager entityManager) {
+        this.entityManager = entityManager;
+    }
+
+    /**
+     * Health Check Endpoint - benötigt KEINE Datenbank
+     */
+    @GetMapping("/health")
+    public ResponseEntity<Map<String, String>> health() {
+        Map<String, String> response = new HashMap<>();
+        response.put("status", "ok");
+        response.put("message", "Test controller is active");
+        return ResponseEntity.ok(response);
+    }
 
     /**
      * Löscht alle Test-Daten (Einträge die mit TEST, CYPRESS, READ, UPDATE, DELETE, etc. beginnen)
@@ -45,9 +61,9 @@ public class TestController {
         int totalDeleted = 0;
 
         try {
-            // WICHTIG: Reihenfolge wegen Foreign Keys!
+            // Reihenfolge wegen Foreign Keys!
             // 1. Zuerst Logs (haben Foreign Keys zu Sample und Analysis)
-            if (logRepository != null) {
+            if (logRepository != null && entityManager != null) {
                 int logCount = entityManager.createQuery(
                         "DELETE FROM Log l WHERE " +
                                 "l.sId LIKE 'TEST%' OR " +
@@ -58,7 +74,7 @@ public class TestController {
                                 "l.sId LIKE 'DELE%' OR " +
                                 "l.sId LIKE 'DUPL%' OR " +
                                 "l.sId LIKE 'ERRS%' OR " +
-                                "l.sId LIKE 'T0%' OR " +  // Für T001, T002, etc.
+                                "l.sId LIKE 'T0%' OR " + // Für T001, T002, etc.
                                 "l.sId LIKE 'SAMP_%' OR " +
                                 "l.sId LIKE 'STAMP%' OR " +
                                 "l.sId LIKE 'ERROR%' OR " +
@@ -71,7 +87,7 @@ public class TestController {
             }
 
             // 2. Analysis Cleanup
-            if (analysisRepository != null) {
+            if (analysisRepository != null && entityManager != null) {
                 int analysisCount = entityManager.createQuery(
                         "DELETE FROM Analysis a WHERE " +
                                 "a.sId LIKE 'TEST%' OR " +
@@ -94,7 +110,7 @@ public class TestController {
             }
 
             // 3. BoxPos Cleanup - MUSS VOR Box und Sample kommen!
-            if (boxPosRepository != null) {
+            if (boxPosRepository != null && entityManager != null) {
                 int boxPosCount = entityManager.createQuery(
                         "DELETE FROM BoxPos bp WHERE " +
                                 "bp.id.bId LIKE 'TEST%' OR " +
@@ -105,7 +121,7 @@ public class TestController {
                                 "bp.id.bId LIKE 'DELE%' OR " +
                                 "bp.id.bId LIKE 'DUPL%' OR " +
                                 "bp.id.bId LIKE 'ERRS%' OR " +
-                                "bp.id.bId LIKE 'T0%' OR " +  // Für T001, T002, etc.
+                                "bp.id.bId LIKE 'T0%' OR " + // Für T001, T002, etc.
                                 "bp.sampleId LIKE 'SAMP_%' OR " +
                                 "bp.sampleId LIKE 'TEST%'"
                 ).executeUpdate();
@@ -114,7 +130,7 @@ public class TestController {
             }
 
             // 4. Sample Cleanup
-            if (sampleRepository != null) {
+            if (sampleRepository != null && entityManager != null) {
                 int sampleCount = entityManager.createQuery(
                         "DELETE FROM Sample s WHERE " +
                                 "s.id.sId LIKE 'TEST%' OR " +
@@ -125,7 +141,7 @@ public class TestController {
                                 "s.id.sId LIKE 'DELE%' OR " +
                                 "s.id.sId LIKE 'DUPL%' OR " +
                                 "s.id.sId LIKE 'ERRS%' OR " +
-                                "s.id.sId LIKE 'SAMP_%' OR " +  // Für SAMP_T001, etc.
+                                "s.id.sId LIKE 'SAMP_%' OR " + // Für SAMP_T001, etc.
                                 "s.id.sId LIKE 'STAMP%' OR " +
                                 "s.id.sId LIKE 'ERROR%' OR " +
                                 "s.name LIKE '%Cypress%' OR " +
@@ -138,7 +154,7 @@ public class TestController {
             }
 
             // 5. Box Cleanup - MUSS NACH BoxPos kommen!
-            if (boxRepository != null) {
+            if (boxRepository != null && entityManager != null) {
                 int boxCount = entityManager.createQuery(
                         "DELETE FROM Box b WHERE " +
                                 "b.id LIKE 'TEST%' OR " +
@@ -149,7 +165,7 @@ public class TestController {
                                 "b.id LIKE 'DELE%' OR " +
                                 "b.id LIKE 'DUPL%' OR " +
                                 "b.id LIKE 'ERRS%' OR " +
-                                "b.id LIKE 'T0%' OR " +  // Für T001, T002, etc.
+                                "b.id LIKE 'T0%' OR " + // Für T001, T002, etc.
                                 "b.id LIKE 'BOX_TEST%' OR " +
                                 "b.id LIKE 'BOX_READ%' OR " +
                                 "b.id LIKE 'BOX_UPDATE%' OR " +
@@ -177,16 +193,5 @@ public class TestController {
             result.put("errorType", e.getClass().getSimpleName());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(result);
         }
-    }
-
-    /**
-     * Health Check Endpoint
-     */
-    @GetMapping("/health")
-    public ResponseEntity<Map<String, String>> health() {
-        Map<String, String> response = new HashMap<>();
-        response.put("status", "ok");
-        response.put("message", "Test controller is active");
-        return ResponseEntity.ok(response);
     }
 }

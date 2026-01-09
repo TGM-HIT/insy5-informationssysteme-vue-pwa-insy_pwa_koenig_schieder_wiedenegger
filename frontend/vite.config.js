@@ -29,13 +29,21 @@ export default defineConfig({
                 ]
             },
             workbox: {
+                globPatterns: ['**/*.{js,css,html,ico,png,svg,json,vue,txt,woff2}'],
+
                 runtimeCaching: [
                     {
-                        urlPattern: /^https:\/\/api\./,
-                        handler: 'NetworkFirst',  // API-Calls mit Fallback
+                        urlPattern: /^https?:\/\/.*\/api\/.*/,  // Alle API-Calls
+                        handler: 'NetworkFirst',
                         options: {
                             cacheName: 'api-cache',
-                            expiration: { maxEntries: 50 }
+                            expiration: {
+                                maxEntries: 50,
+                                maxAgeSeconds: 60 * 60 * 24  // 24 Stunden
+                            },
+                            cacheableResponse: {
+                                statuses: [0, 200]  // Nur erfolgreiche Responses cachen
+                            }
                         }
                     }
                 ]

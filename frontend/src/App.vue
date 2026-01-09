@@ -20,27 +20,41 @@
 
           <a @click="logout" style="cursor: pointer; background: rgba(0,0,0,0.2);">Logout</a>
         </div>
+        <button @click="toggleTheme" class="theme-switch-btn">
+          {{ theme === 'light' ? '🌙' : '☀️' }}
+        </button>
       </nav>
 
-      <main>
-        <DataTable
-            :title="view.toUpperCase()"
-            :columns="columns[view]"
-            :data="data"
-            :loading="loading"
-            :sort-by="effectiveSortBy"
-            :sort-dir="sortDir"
-            :expandable="view==='box'"
-            :expand-key="'b_id'"
-            :expanded-keys="expandedKeys"
-            :child-map="boxposByBox"
-            :child-columns="boxposChildColumns"
-            @toggle-expand="toggleExpand"
-            @sort-change="onSortChange"
-            @add="addItem"
-            @edit="editItem"
-            @delete="deleteItem"
+    <main>
+
+      <div class="table-controls">
+        <ColumnSelector
+            :all-columns="columns[view]"
+            :visibility="columnVisibility[view]"
+            @toggle="toggleColumn"
+            @select-all="selectAllColumns"
+            @reset="resetColumns"
         />
+      </div>
+
+      <DataTable
+          :title="view.toUpperCase()"
+          :columns="visibleColumns"
+          :data="data"
+          :loading="loading"
+          :sort-by="effectiveSortBy"
+          :sort-dir="sortDir"
+          :expandable="view==='box'"
+          :expand-key="'b_id'"
+          :expanded-keys="expandedKeys"
+          :child-map="boxposByBox"
+          :child-columns="boxposChildColumns"
+          @toggle-expand="toggleExpand"
+          @sort-change="onSortChange"
+          @add="addItem"
+          @edit="editItem"
+          @delete="deleteItem"
+      />
 
         <div class="pagination" v-if="totalPages > 1 || totalElements > pageSize">
           <button class="btn" @click="prevPage" :disabled="currentPage === 0" data-cy="btn-prev">Previous</button>
@@ -69,6 +83,7 @@
   </div>
 </template>
 
+
 <script>
 // ACHTUNG BEI DEN PFADEN:
 // Wenn api.js und AuthService.js im selben Ordner wie App.vue liegen, nutze './'
@@ -80,10 +95,13 @@ import LoginForm from './components/LoginForm.vue' // <--- NEU: Login Komponente
 import DataTable from './components/DataTable.vue'
 import EditModal from './components/EditModal.vue'
 import AddModal from './components/AddModal.vue'
+import ColumnSelector from './components/ColumnSelector.vue'
+
+const API = 'http://localhost:8081/api'
 
 export default {
   // LoginForm hier registrieren
-  components: { DataTable, EditModal, AddModal, LoginForm },
+  components: { DataTable, EditModal, AddModal, LoginForm, ColumnSelector },
 
   computed: {
     totalPagesDisplay() {
@@ -91,21 +109,35 @@ export default {
     },
     effectiveSortBy() {
       return this.sortBy || this.defaultSortBy[this.view]
+    },
+    visibleColumns() {
+      const view = this.view
+      const allCols = this.columns[view]
+      const visibility = this.columnVisibility[view]
+
+      // Filter nur sichtbare Spalten
+      return allCols.filter(col => {
+        // Default: alle Spalten sichtbar wenn nicht definiert
+        return visibility[col] !== false
+      })
     }
   },
   data() {
     return {
       isLoggedIn: false, // <--- NEU: Status für Login
+      theme: 'light',
       view: 'analysis',
       data: [],
       loading: false,
       showEditModal: false,
       showAddModal: false,
       editingItem: null,
+      // pagination state
       currentPage: 0,
       pageSize: 20,
       totalElements: 0,
       totalPages: 1,
+      // sorting state
       sortBy: null,
       sortDir: 'desc',
       defaultSortBy: {
@@ -115,9 +147,11 @@ export default {
         boxpos: 'bpos_id',
         log: 'id'
       },
+      // expansion state for Box view
       expandedKeys: [],
       boxposByBox: {},
       boxposChildColumns: ['bpos_id', 's_id', 's_stamp', 'date_exported'],
+      // columns config
       columns: {
         analysis: [
           'a_id', 's_id', 's_stamp', 'pol', 'nat', 'kal', 'an', 'glu', 'dry',
@@ -135,7 +169,16 @@ export default {
           'bpos_id', 'b_id', 's_id', 's_stamp', 'date_exported'
         ],
         log: ['id', 'dateCreated', 'level', 'info', 'sId', 'sStamp', 'aId', 'dateExported']
-      }
+      },
+
+      // Column visibility state
+      columnVisibility: {
+        analysis: {},
+        sample: {},
+        box: {},
+        boxpos: {},
+        log: {}
+      },
     }
   },
   watch: {
@@ -159,11 +202,23 @@ export default {
 
     if (this.isLoggedIn) {
       this.loadData();
+      this.loadTheme();
+      this.loadColumnVisibility();
     } else {
       console.log("Nicht eingeloggt. Zeige Login-Maske.");
     }
   },
   methods: {
+    toggleTheme() {
+      this.theme = this.theme === 'light' ? 'dark' : 'light';
+      localStorage.setItem('theme', this.theme);
+    },
+    loadTheme() {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme) {
+        this.theme = savedTheme;
+      }
+    },
     // --- NEUE METHODEN FÜR LOGIN ---
     onLoginSuccess() {
       this.isLoggedIn = true;
@@ -179,6 +234,7 @@ export default {
     mapSortField(col) {
       if (!col) return 'id'
       const v = this.view
+      // special mappings per view
       const special = {
         analysis: {
           'a_id': 'id',
@@ -219,6 +275,7 @@ export default {
       }
       const map = special[v] || {}
       if (map[col]) return map[col]
+      // generic snake_case -> camelCase
       if (col.includes('_')) {
         return col.replace(/_([a-z])/g, (_, c) => c.toUpperCase())
       }
@@ -249,14 +306,17 @@ export default {
         if (isDate) {
           return (da - db) * dir
         }
+        // numbers
         if (typeof va === 'number' && typeof vb === 'number') {
           return (va - vb) * dir
         }
+        // numeric strings
         const na = Number(va)
         const nb = Number(vb)
         if (!isNaN(na) && !isNaN(nb)) {
           return (na - nb) * dir
         }
+        // strings
         return String(va).localeCompare(String(vb)) * dir
       })
       return sorted
@@ -266,9 +326,11 @@ export default {
       const key = row['b_id']
       const idx = this.expandedKeys.indexOf(key)
       if (idx >= 0) {
+        // collapse
         this.expandedKeys.splice(idx, 1)
         return
       }
+      // expand
       this.expandedKeys.push(key)
       if (!this.boxposByBox[key]) {
         try {
@@ -279,6 +341,7 @@ export default {
 
           console.error('Failed to load BoxPos for', key, e)
           this.$set ? this.$set(this.boxposByBox, key, []) : (this.boxposByBox[key] = [])
+          alert(`Error loading positions for box ${key}: ${e.response?.data?.message || e.message}`)
         }
       }
     },
@@ -322,15 +385,18 @@ export default {
         })
 
         if (res.data && Array.isArray(res.data.content)) {
+          // Pageable response
           this.data = res.data.content
           this.totalElements = typeof res.data.totalElements === 'number' ? res.data.totalElements : this.data.length
           this.totalPages = typeof res.data.totalPages === 'number' ? res.data.totalPages : Math.max(1, Math.ceil(this.totalElements / this.pageSize))
 
+          // If requested page is out of bounds (e.g., after deletion), go to last page
           if (this.currentPage >= this.totalPages && this.totalPages > 0) {
             this.currentPage = this.totalPages - 1
             return this.loadData()
           }
         } else if (Array.isArray(res.data)) {
+          // Non-pageable response: client-side sort + paginate
           const sorted = this.clientSort(res.data)
           this.totalElements = sorted.length
           this.totalPages = Math.max(1, Math.ceil(this.totalElements / this.pageSize))
@@ -355,6 +421,7 @@ export default {
         }
 
         console.error('Error loading data:', err)
+        alert(`Error loading ${this.view}: ${err.response?.data?.message || err.message}`)
         this.data = []
         this.totalElements = 0
         this.totalPages = 1
@@ -492,12 +559,72 @@ export default {
           alert(`Delete failed: ${err.response?.data?.message || err.message}`)
         }
       }
+    },
+
+    loadColumnVisibility() {
+      const saved = localStorage.getItem('columnVisibility')
+      if (saved) {
+        this.columnVisibility = JSON.parse(saved)
+      } else {
+        // Initialisiere mit allen Spalten sichtbar
+        Object.keys(this.columns).forEach(view => {
+          this.columnVisibility[view] = {}
+          this.columns[view].forEach(col => {
+            this.columnVisibility[view][col] = true
+          })
+        })
+      }
+    },
+
+    saveColumnVisibility() {
+      localStorage.setItem('columnVisibility', JSON.stringify(this.columnVisibility))
+    },
+
+    toggleColumn(col) {
+      this.columnVisibility[this.view][col] = !this.columnVisibility[this.view][col]
+      this.saveColumnVisibility()
+    },
+
+    selectAllColumns() {
+      const view = this.view
+      this.columns[view].forEach(col => {
+        this.columnVisibility[view][col] = true
+      })
+      this.saveColumnVisibility()
+    },
+
+    resetColumns() {
+      const view = this.view
+      this.columns[view].forEach(col => {
+        this.columnVisibility[view][col] = true
+      })
+      this.saveColumnVisibility()
     }
   }
 }
 </script>
 
 <style>
+:root {
+  --bg-color: #f3f4f6;
+  --text-color: #111827;
+  --nav-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --nav-text: white;
+  --btn-bg: white;
+  --btn-border: #e5e7eb;
+  --btn-text: #374151;
+}
+
+.dark {
+  --bg-color: #111827;
+  --text-color: #f3f4f6;
+  --nav-bg: linear-gradient(135deg, #374151 0%, #111827 100%);
+  --nav-text: #f3f4f6;
+  --btn-bg: #374151;
+  --btn-border: #4b5563;
+  --btn-text: #f3f4f6;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -506,18 +633,19 @@ export default {
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  background: #f3f4f6;
+  background: var(--bg-color);
+  color: var(--text-color);
   min-height: 100vh;
 }
 
 #app {
   min-height: 100vh;
-  background: #f3f4f6;
+  background: var(--bg-color);
 }
 
 nav {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: var(--nav-bg);
+  color: var(--nav-text);
   padding: 18px 32px;
   display: flex;
   justify-content: space-between;
@@ -537,7 +665,7 @@ nav {
 }
 
 .nav-links a {
-  color: white;
+  color: var(--nav-text);
   cursor: pointer;
   padding: 9px 18px;
   border-radius: 7px;
@@ -555,6 +683,14 @@ nav {
 .nav-links a.active {
   background: rgba(255, 255, 255, 0.25);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.theme-switch-btn {
+  background: none;
+  border: none;
+  color: var(--nav-text);
+  font-size: 24px;
+  cursor: pointer;
 }
 
 main {
@@ -589,8 +725,9 @@ main {
 }
 
 .pagination .btn {
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: var(--btn-bg);
+  border: 1px solid var(--btn-border);
+  color: var(--btn-text);
   padding: 6px 12px;
   border-radius: 6px;
   cursor: pointer;
@@ -609,7 +746,15 @@ main {
 
 .pagination .page-info {
   font-size: 14px;
-  color: #374151;
+  color: var(--text-color);
 }
+
+.table-controls {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+
 
 </style>

@@ -1,4 +1,23 @@
 services:
+  traefik:
+    image: traefik:v3
+    restart: always
+    container_name: traefik
+    command:
+      - "--api.insecure=true"
+      - "--entryPoints.web.address=:80"
+      - "--entryPoints.websecure.address=:443"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - app-network
+
   db:
     image: postgres:13
     container_name: postgres13
@@ -29,6 +48,13 @@ services:
       - "8081:8081"
     networks:
       - app-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=PathPrefix(`/api`)"
+      - "traefik.http.routers.backend.entrypoints=websecure"
+      - "traefik.http.routers.backend.tls=true"
+      - "traefik.http.services.backend.loadbalancer.server.port=8081"
+      - "traefik.docker.network=app-network"
 
   frontend:
     build: ./frontend
@@ -40,6 +66,13 @@ services:
       - backend
     networks:
       - app-network
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls=true"
+      - "traefik.docker.network=app-network"
 
 volumes:
   pgdata:

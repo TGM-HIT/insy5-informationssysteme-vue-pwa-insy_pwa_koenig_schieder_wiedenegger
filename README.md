@@ -105,6 +105,82 @@ Im Workflow:
   4. Der Generator erstellt SVG-Dateien (Badges) und speichert sie im Ordner `.github/badges/`.
   5. Dann wird commited und beim pushen können die infos online eingesehen werden
 
+## Cloud-Deployment
+
+Für das Cloud-Deployment wurde das GitHub Student Developer Pack [4] genutzt, welches 200$ Guthaben für DigitalOcean bereitstellt. 
+
+Es wurde ein **Droplet** (virtueller Server) mit folgender Konfiguration erstellt:
+- **OS:** Ubuntu mit vorinstalliertem Docker
+- **Ressourcen:** 2 vCPUs, 4 GB RAM, 25 GB SSD Speicher
+
+Nach der Erstellung des Droplets wurde das GitHub-Repository direkt auf den Server geklont. Anschließend wurden die Container mittels `docker-compose` gebaut und gestartet, wodurch die Anwendung (Frontend, Backend und Datenbank) nun öffentlich erreichbar ist. [5]
+
+### Schnell start am Droplet oder auch lokal:
+```bash
+# Am Server zuerst rein SSHn 
+ssh root@46.101.148.160
+
+# Backend Builden
+cd backend
+./gradlew bootJar
+
+## Zurück ins Main Verzeichnis
+cd ..
+
+# Falls noch container Laufen
+docker-compose down
+
+# Applikation Starten
+docker-compose up --build -d
+```
+
+### Backup und Restore ausführen
+Um den Backup Ordner auf den Server zu bekommen einfach mit ssh:
+```bash
+scp -r ./backup root@DEINE_SERVER_IP:/root/DEIN_REPO_NAME/
+```
+
+Weiters einfach wieder reinsshn und:
+```bash
+ls -la backup/
+
+# In Container kopieren
+docker cp backup postgres13:/tmp/backup
+
+# Prüfen
+docker exec postgres13 ls -la /tmp/backup/
+```
+Pfade im SQL-File anpassen
+```bash
+# Falls restore.sql absolute Pfade enthält, anpassen
+docker exec postgres13 sed -i 's|/backup/|/tmp/backup/|g' /tmp/backup/restore.sql
+```
+
+
+#### Datenbank neu erstellen und Restore durchführen
+```bash
+# Backend stoppen (Verbindungen trennen)
+docker compose stop backend
+
+# Alte DB droppen und neu erstellen
+docker exec postgres13 psql -U postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'venlab';"
+docker exec postgres13 psql -U postgres -c "DROP DATABASE IF EXISTS venlab;"
+docker exec postgres13 psql -U postgres -c "CREATE DATABASE venlab;"
+
+# Restore durchführen
+docker exec -i postgres13 psql -U postgres -d venlab -f /tmp/backup/restore.sql
+
+# Backend wieder starten
+docker compose start backend
+```
+
+Überprüfen:
+```bash
+docker exec postgres13 psql -U postgres -d venlab -c "SELECT COUNT(*) FROM venlab.box;"
+docker exec postgres13 psql -U postgres -d venlab -c "SELECT COUNT(*) FROM venlab.analysis;"
+```
+
+
 ## Quellen
 
 [1] „Quickstart for GitHub Actions“, GitHub Docs. Zugegriffen: 8. Jänner 2026. [Online]. Verfügbar unter: https://docs.github.com/en/actions/quickstart
@@ -112,3 +188,7 @@ Im Workflow:
 [2] „GitHub Actions Workflows: How to Create and Manage“, Spacelift. Zugegriffen: 8. Jänner 2026. [Online]. Verfügbar unter: https://spacelift.io/blog/github-actions-workflows
 
 [3] „JaCoCo - Java Code Coverage Library“, Eclemma.org. Zugegriffen: 8. Jänner 2026. [Online]. Verfügbar unter: https://www.eclemma.org/jacoco/
+
+[4] „GitHub Student Developer Pack“, GitHub Education. Zugegriffen: 8. Jänner 2026. [Online]. Verfügbar unter: https://education.github.com/pack
+
+[5] „Quickstart for App Platform“, DigitalOcean Docs. Zugegriffen: 8. Jänner 2026. [Online]. Verfügbar unter: https://docs.digitalocean.com/products/app-platform/getting-started/quickstart/#create-an-app

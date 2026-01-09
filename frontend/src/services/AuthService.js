@@ -1,11 +1,9 @@
-import axios from "axios";
-
-const API_URL = "http://localhost:8081/api/auth";
+import api from './api'; // <-- GEÄNDERT: Importiere die zentrale api Instanz
 
 class AuthService {
     login(username, password) {
-        return axios
-            .post(`${API_URL}/login`, { username, password })
+        // GEÄNDERT: Nutze die zentrale api Instanz
+        return api.post('/auth/login', { username, password })
             .then((response) => {
                 if (response.data.token) {
                     localStorage.setItem("user", JSON.stringify(response.data));

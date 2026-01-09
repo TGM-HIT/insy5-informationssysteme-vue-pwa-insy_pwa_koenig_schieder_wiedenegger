@@ -97,7 +97,7 @@ import EditModal from './components/EditModal.vue'
 import AddModal from './components/AddModal.vue'
 import ColumnSelector from './components/ColumnSelector.vue'
 
-const API = 'http://localhost:8081/api'
+const API = 'https://localhost:8081/api'
 
 export default {
   // LoginForm hier registrieren
@@ -182,6 +182,9 @@ export default {
     }
   },
   watch: {
+    theme(newTheme) {
+      document.body.className = newTheme;
+    },
     view() {
       // Nur laden, wenn eingeloggt
       if(this.isLoggedIn) {
@@ -199,10 +202,10 @@ export default {
     // Wir leiten NICHT weiter (kein window.location.href), sondern setzen nur den Status.
     // Das v-if im Template kümmert sich um den Rest.
     this.isLoggedIn = AuthService.isLoggedIn();
+    this.loadTheme();
 
     if (this.isLoggedIn) {
       this.loadData();
-      this.loadTheme();
       this.loadColumnVisibility();
     } else {
       console.log("Nicht eingeloggt. Zeige Login-Maske.");
@@ -214,10 +217,9 @@ export default {
       localStorage.setItem('theme', this.theme);
     },
     loadTheme() {
-      const savedTheme = localStorage.getItem('theme');
-      if (savedTheme) {
-        this.theme = savedTheme;
-      }
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      this.theme = savedTheme;
+      document.body.className = savedTheme;
     },
     // --- NEUE METHODEN FÜR LOGIN ---
     onLoginSuccess() {
@@ -613,16 +615,24 @@ export default {
   --btn-bg: white;
   --btn-border: #e5e7eb;
   --btn-text: #374151;
+  --table-header-bg: #f9fafb;
+  --table-row-bg: white;
+  --table-row-hover-bg: #f3f4f6;
+  --modal-bg: white;
 }
 
-.dark {
-  --bg-color: #111827;
-  --text-color: #f3f4f6;
+body.dark {
+  --bg-color: #1f2937;
+  --text-color: #f9fafb;
   --nav-bg: linear-gradient(135deg, #374151 0%, #111827 100%);
   --nav-text: #f3f4f6;
   --btn-bg: #374151;
   --btn-border: #4b5563;
   --btn-text: #f3f4f6;
+  --table-header-bg: #374151;
+  --table-row-bg: #1f2937;
+  --table-row-hover-bg: #374151;
+  --modal-bg: #1f2937;
 }
 
 * {
@@ -636,6 +646,7 @@ body {
   background: var(--bg-color);
   color: var(--text-color);
   min-height: 100vh;
+  transition: background-color 0.3s, color 0.3s;
 }
 
 #app {

@@ -128,10 +128,10 @@ cd backend
 cd ..
 
 # Falls noch container Laufen
-docker-compose down
+docker compose down
 
 # Applikation Starten
-docker-compose up --build -d
+docker compose up --build -d
 ```
 
 ### Backup und Restore ausführen
@@ -180,6 +180,23 @@ docker exec postgres13 psql -U postgres -d venlab -c "SELECT COUNT(*) FROM venla
 docker exec postgres13 psql -U postgres -d venlab -c "SELECT COUNT(*) FROM venlab.analysis;"
 ```
 
+### HTTPS und Mixed-Content-Fehler fixen
+
+Um Service Worker nutzen zu können, ist HTTPS notwendig. Nach der Umstellung kam es zu "Mixed Content"-Fehlern, da das Frontend (via HTTPS) versuchte, das Backend über eine HTTP-URL anzusprechen.
+
+#### Lösung
+
+**Traefik als Reverse Proxy [6]:** In der `docker-compose.yml` wurde Traefik als zentraler Eingangspunkt konfiguriert.
+    -   Alle Anfragen an `https://<domain>/api/...` werden an den Backend-Container weitergeleitet.
+    -   Alle anderen Anfragen an den Frontend-Container.
+    -   Eine automatische Weiterleitung von HTTP zu HTTPS wurde eingerichtet.
+
+
+**Relative API-Pfade im Frontend [7]:** In `frontend/src/App.vue` wurde die API-Basis-URL von einer absoluten (`http://localhost:8081/api`) zu einer relativen URL (`/api`) geändert.
+    ```javascript
+    const API = '/api'; 
+    ```
+    Dadurch wird automatisch HTTPS verwendet und "Mixed Content" wird vermieden.
 
 ## Quellen
 
@@ -192,3 +209,7 @@ docker exec postgres13 psql -U postgres -d venlab -c "SELECT COUNT(*) FROM venla
 [4] „GitHub Student Developer Pack“, GitHub Education. Zugegriffen: 8. Jänner 2026. [Online]. Verfügbar unter: https://education.github.com/pack
 
 [5] „Quickstart for App Platform“, DigitalOcean Docs. Zugegriffen: 8. Jänner 2026. [Online]. Verfügbar unter: https://docs.digitalocean.com/products/app-platform/getting-started/quickstart/#create-an-app
+
+[6] „Traefik Proxy Documentation“, Traefik Labs. Zugegriffen: 8. Jänner 2026. [Online]. Verfügbar unter: https://doc.traefik.io/traefik/
+
+[7] „Mixed Content“, MDN Web Docs. Zugegriffen: 8. Jänner 2026. [Online]. Verfügbar unter: https://developer.mozilla.org/en-US/docs/Web/Security/Mixed_content

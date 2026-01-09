@@ -48,6 +48,13 @@ services:
       - "8081:8081"
     networks:
       - app-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=PathPrefix(`/api`)"
+      - "traefik.http.routers.backend.entrypoints=websecure"
+      - "traefik.http.routers.backend.tls=true"
+      - "traefik.http.services.backend.loadbalancer.server.port=8081"
+      - "traefik.docker.network=app-network"
 
   frontend:
     build: ./frontend

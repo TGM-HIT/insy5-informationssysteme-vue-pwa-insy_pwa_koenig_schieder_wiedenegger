@@ -2,7 +2,7 @@ import axios from 'axios'
 import AuthService from './AuthService'
 
 const api = axios.create({
-    baseURL: 'http://localhost:8081/api/',
+    baseURL: '/api', // <-- GEÄNDERT: Relative URL
     headers: {
         'Content-Type': 'application/json'
     }

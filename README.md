@@ -198,20 +198,12 @@ Um Service Worker nutzen zu können, ist HTTPS notwendig. Nach der Umstellung ka
     ```
     Dadurch wird automatisch HTTPS verwendet und "Mixed Content" wird vermieden.
 
----
 
 # Login-System für Lab Data Management PWA
 
 ## Projektübersicht
 
-Implementierung eines vollständigen Benutzer-Authentifizierungssystems für die bestehende Vue.js PWA (Progressive Web App) mit Spring Boot Backend.
 
-**Projekt:** insy5-informationssysteme-vue-pwa  
-**Entwickler:** Claudio Wiedenegger  
-**Datum:** Januar 2026  
-**Schulfach:** INSY (Informationssysteme) - 5AHIT
-
----
 
 ## Implementierte Features
 
@@ -244,7 +236,6 @@ runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
 runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 ```
 
----
 
 ### Frontend (Vue.js)
 
@@ -282,30 +273,14 @@ runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 - `logout()` - Benutzer-Abmeldung mit Daten-Reset
 - Automatische Session-Wiederherstellung beim Seitenaufruf
 
----
 
-## Benutzer-Credentials
+## Benutzer Credential
 
 | Benutzername | Passwort | Rolle |
 |--------------|----------|-------|
 | admin | password | ADMIN |
-| reader | password | READER |
-| researcher | password | RESEARCHER |
-
----
-
-## Technologie-Stack
-
-| Komponente | Technologie |
-|------------|-------------|
-| Frontend | Vue.js 3, Vuetify |
-| Backend | Spring Boot, Spring Security |
-| Datenbank | PostgreSQL |
-| Container | Docker, Docker Compose |
-| Build-Tool | Gradle (Backend), npm (Frontend) |
 
 
----
 
 ## Login-Flow
 
@@ -334,7 +309,6 @@ runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 └─────────────┘
 ```
 
----
 
 ## Probleme & Lösungen während der Entwicklung
 
@@ -362,9 +336,6 @@ runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 2. Java-Prozesse beenden
 3. Gradle Cache löschen: `rd /s /q C:\Users\<user>\.gradle\wrapper\dists`
 4. IntelliJ neu starten
-
----
-
 
 
 

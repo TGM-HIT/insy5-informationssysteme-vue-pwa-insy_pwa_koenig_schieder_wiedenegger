@@ -78,7 +78,7 @@ import EditModal from './components/EditModal.vue'
 import AddModal from './components/AddModal.vue'
 import ColumnSelector from './components/ColumnSelector.vue'
 
-const API = '/api'
+const API = 'http://localhost:8081/api'
 
 export default {
   components: { DataTable, EditModal, AddModal, ColumnSelector },

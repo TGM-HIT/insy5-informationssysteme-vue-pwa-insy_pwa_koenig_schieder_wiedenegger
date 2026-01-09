@@ -1,0 +1,3 @@
+[submodule "modules/frontend"]
+	path = modules/frontend
+	url = https://github.com/TGM-HIT/insy5-informationssysteme-vue-crud-petrovic_schieder.git

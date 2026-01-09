@@ -1,0 +1,10 @@
+package tgm.ac.at.gk911_informationssysteme_rest_backend.repository;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import tgm.ac.at.gk911_informationssysteme_rest_backend.entity.Sample;
+import tgm.ac.at.gk911_informationssysteme_rest_backend.entity.SampleId;
+
+@Repository
+public interface SampleRepository extends JpaRepository<Sample, SampleId> {
+}

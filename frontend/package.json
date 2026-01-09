@@ -1,0 +1,33 @@
+{
+  "name": "gk911vuedatatable",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 8082",
+    "build": "vite build",
+    "cypress:run": "cypress run",
+    "cypress:open": "cypress open",
+    "test:cleanup": "node scripts/cleanup.js",
+    "test:e2e": "npm run cypress:run && node update-badge.cjs",
+    "test:e2e:clean": "npm run test:cleanup && npm run cypress:run && npm run test:cleanup",
+    "test:e2e:only": "cypress run",
+    "test:open": "cypress open",
+    "test:report": "open cypress/reports/html/index.html",
+    "test:sumary": "cypress run && node generate-report-summary.js",
+    "update-badge": "node update-badge.cjs"
+  },
+  "dependencies": {
+    "axios": "^1.7.0",
+    "vue": "^3.5.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.0",
+    "cypress": "^15.7.1",
+    "cypress-json-results": "^1.5.0",
+    "cypress-mochawesome-reporter": "^4.0.2",
+    "mochawesome": "^7.1.4",
+    "mochawesome-merge": "^5.1.0",
+    "mochawesome-report-generator": "^6.3.2",
+    "vite": "^5.4.0"
+  }
+}

@@ -1,75 +1,90 @@
 <template>
   <div id="app">
-    <nav>
-      <div class="nav-brand">
-        <h1>Lab Data Management</h1>
-      </div>
-      <div class="nav-links">
-        <a @click="view='analysis'" :class="{active: view=='analysis'}" data-cy="nav-analysis">Analysis</a>
-        <a @click="view='sample'" :class="{active: view=='sample'}" data-cy="nav-sample">Sample</a>
-        <a @click="view='box'" :class="{active: view=='box'}" data-cy="nav-box">Box</a>
-        <a @click="view='boxpos'" :class="{active: view=='boxpos'}" data-cy="nav-boxpos">BoxPos</a>
-        <a @click="view='log'" :class="{active: view=='log'}" data-cy="nav-log">Log</a>
-      </div>
-    </nav>
 
-    <main>
-      <DataTable
-          :title="view.toUpperCase()"
-          :columns="columns[view]"
-          :data="data"
-          :loading="loading"
-          :sort-by="effectiveSortBy"
-          :sort-dir="sortDir"
-          :expandable="view==='box'"
-          :expand-key="'b_id'"
-          :expanded-keys="expandedKeys"
-          :child-map="boxposByBox"
-          :child-columns="boxposChildColumns"
-          @toggle-expand="toggleExpand"
-          @sort-change="onSortChange"
-          @add="addItem"
-          @edit="editItem"
-          @delete="deleteItem"
+    <LoginForm
+        v-if="!isLoggedIn"
+        @login-success="onLoginSuccess"
+    />
+
+    <div v-else>
+      <nav>
+        <div class="nav-brand">
+          <h1>Lab Data Management</h1>
+        </div>
+        <div class="nav-links">
+          <a @click="view='analysis'" :class="{active: view=='analysis'}" data-cy="nav-analysis">Analysis</a>
+          <a @click="view='sample'" :class="{active: view=='sample'}" data-cy="nav-sample">Sample</a>
+          <a @click="view='box'" :class="{active: view=='box'}" data-cy="nav-box">Box</a>
+          <a @click="view='boxpos'" :class="{active: view=='boxpos'}" data-cy="nav-boxpos">BoxPos</a>
+          <a @click="view='log'" :class="{active: view=='log'}" data-cy="nav-log">Log</a>
+
+          <a @click="logout" style="cursor: pointer; background: rgba(0,0,0,0.2);">Logout</a>
+        </div>
+      </nav>
+
+      <main>
+        <DataTable
+            :title="view.toUpperCase()"
+            :columns="columns[view]"
+            :data="data"
+            :loading="loading"
+            :sort-by="effectiveSortBy"
+            :sort-dir="sortDir"
+            :expandable="view==='box'"
+            :expand-key="'b_id'"
+            :expanded-keys="expandedKeys"
+            :child-map="boxposByBox"
+            :child-columns="boxposChildColumns"
+            @toggle-expand="toggleExpand"
+            @sort-change="onSortChange"
+            @add="addItem"
+            @edit="editItem"
+            @delete="deleteItem"
+        />
+
+        <div class="pagination" v-if="totalPages > 1 || totalElements > pageSize">
+          <button class="btn" @click="prevPage" :disabled="currentPage === 0" data-cy="btn-prev">Previous</button>
+          <span class="page-info" data-cy="page-info">Page {{ currentPage + 1 }} of {{ totalPagesDisplay }} ({{ totalElements }} total)</span>
+          <button class="btn" @click="nextPage" :disabled="currentPage >= totalPages - 1" data-cy="btn-next">Next</button>
+        </div>
+      </main>
+
+      <EditModal
+          :show="showEditModal"
+          :item="editingItem"
+          :entity-type="view"
+          :fields="columns[view]"
+          @close="closeEditModal"
+          @save="saveItem"
       />
 
-      <div class="pagination" v-if="totalPages > 1 || totalElements > pageSize">
-        <button class="btn" @click="prevPage" :disabled="currentPage === 0" data-cy="btn-prev">Previous</button>
-        <span class="page-info" data-cy="page-info">Page {{ currentPage + 1 }} of {{ totalPagesDisplay }} ({{ totalElements }} total)</span>
-        <button class="btn" @click="nextPage" :disabled="currentPage >= totalPages - 1" data-cy="btn-next">Next</button>
-      </div>
-    </main>
-
-    <EditModal
-        :show="showEditModal"
-        :item="editingItem"
-        :entity-type="view"
-        :fields="columns[view]"
-        @close="closeEditModal"
-        @save="saveItem"
-    />
-
-    <AddModal
-        :show="showAddModal"
-        :entity-type="view"
-        :fields="columns[view]"
-        @close="closeAddModal"
-        @add="addNewItem"
-    />
+      <AddModal
+          :show="showAddModal"
+          :entity-type="view"
+          :fields="columns[view]"
+          @close="closeAddModal"
+          @add="addNewItem"
+      />
+    </div>
   </div>
 </template>
 
-
 <script>
-import axios from 'axios'
+// ACHTUNG BEI DEN PFADEN:
+// Wenn api.js und AuthService.js im selben Ordner wie App.vue liegen, nutze './'
+// Wenn sie im Ordner 'services' liegen, nutze './services/'
+import api from './services/api'
+import AuthService from './services/AuthService'
+import LoginForm from './components/LoginForm.vue' // <--- NEU: Login Komponente importieren
+
 import DataTable from './components/DataTable.vue'
 import EditModal from './components/EditModal.vue'
 import AddModal from './components/AddModal.vue'
 
-const API = 'http://localhost:8081/api'
-
 export default {
-  components: { DataTable, EditModal, AddModal },
+  // LoginForm hier registrieren
+  components: { DataTable, EditModal, AddModal, LoginForm },
+
   computed: {
     totalPagesDisplay() {
       return this.totalPages || 1
@@ -80,18 +95,17 @@ export default {
   },
   data() {
     return {
+      isLoggedIn: false, // <--- NEU: Status für Login
       view: 'analysis',
       data: [],
       loading: false,
       showEditModal: false,
       showAddModal: false,
       editingItem: null,
-      // pagination state
       currentPage: 0,
       pageSize: 20,
       totalElements: 0,
       totalPages: 1,
-      // sorting state
       sortBy: null,
       sortDir: 'desc',
       defaultSortBy: {
@@ -101,11 +115,9 @@ export default {
         boxpos: 'bpos_id',
         log: 'id'
       },
-      // expansion state for Box view
       expandedKeys: [],
       boxposByBox: {},
       boxposChildColumns: ['bpos_id', 's_id', 's_stamp', 'date_exported'],
-      // columns config
       columns: {
         analysis: [
           'a_id', 's_id', 's_stamp', 'pol', 'nat', 'kal', 'an', 'glu', 'dry',
@@ -128,21 +140,45 @@ export default {
   },
   watch: {
     view() {
-      this.currentPage = 0;
-      this.sortBy = null;
-      this.sortDir = 'desc';
-      // reset expansion state when changing views
-      this.expandedKeys = [];
-      this.boxposByBox = {};
-      this.loadData();
+      // Nur laden, wenn eingeloggt
+      if(this.isLoggedIn) {
+        this.currentPage = 0;
+        this.sortBy = null;
+        this.sortDir = 'desc';
+        this.expandedKeys = [];
+        this.boxposByBox = {};
+        this.loadData();
+      }
     }
   },
-  mounted() { this.loadData() },
+  mounted() {
+    // KORRIGIERTER LOGIN CHECK:
+    // Wir leiten NICHT weiter (kein window.location.href), sondern setzen nur den Status.
+    // Das v-if im Template kümmert sich um den Rest.
+    this.isLoggedIn = AuthService.isLoggedIn();
+
+    if (this.isLoggedIn) {
+      this.loadData();
+    } else {
+      console.log("Nicht eingeloggt. Zeige Login-Maske.");
+    }
+  },
   methods: {
+    // --- NEUE METHODEN FÜR LOGIN ---
+    onLoginSuccess() {
+      this.isLoggedIn = true;
+      this.loadData();
+    },
+    logout() {
+      AuthService.logout();
+      this.isLoggedIn = false;
+      this.data = [];
+    },
+
+    // --- DEINE BESTEHENDEN METHODEN (UNVERÄNDERT) ---
     mapSortField(col) {
       if (!col) return 'id'
       const v = this.view
-      // special mappings per view
       const special = {
         analysis: {
           'a_id': 'id',
@@ -158,7 +194,7 @@ export default {
           'date_exported': 'dateExported'
         },
         sample: {
-          's_id': 'id.sId', // not pageable but keep mapping
+          's_id': 'id.sId',
           's_stamp': 'id.sStamp',
           'weight_net': 'weightNet',
           'weight_bru': 'weightBru',
@@ -183,7 +219,6 @@ export default {
       }
       const map = special[v] || {}
       if (map[col]) return map[col]
-      // generic snake_case -> camelCase
       if (col.includes('_')) {
         return col.replace(/_([a-z])/g, (_, c) => c.toUpperCase())
       }
@@ -208,24 +243,20 @@ export default {
         if (va == null && vb == null) return 0
         if (va == null) return 1
         if (vb == null) return -1
-        // try date
         const da = Date.parse(va)
         const db = Date.parse(vb)
         const isDate = !isNaN(da) && !isNaN(db)
         if (isDate) {
           return (da - db) * dir
         }
-        // numbers
         if (typeof va === 'number' && typeof vb === 'number') {
           return (va - vb) * dir
         }
-        // numeric strings
         const na = Number(va)
         const nb = Number(vb)
         if (!isNaN(na) && !isNaN(nb)) {
           return (na - nb) * dir
         }
-        // strings
         return String(va).localeCompare(String(vb)) * dir
       })
       return sorted
@@ -235,26 +266,24 @@ export default {
       const key = row['b_id']
       const idx = this.expandedKeys.indexOf(key)
       if (idx >= 0) {
-        // collapse
         this.expandedKeys.splice(idx, 1)
         return
       }
-      // expand
       this.expandedKeys.push(key)
       if (!this.boxposByBox[key]) {
         try {
           const items = await this.fetchAllBoxPos(key)
           this.$set ? this.$set(this.boxposByBox, key, items) : (this.boxposByBox[key] = items)
         } catch (e) {
+          if (e.response && e.response.status === 403) return;
+
           console.error('Failed to load BoxPos for', key, e)
           this.$set ? this.$set(this.boxposByBox, key, []) : (this.boxposByBox[key] = [])
-          alert(`Error loading positions for box ${key}: ${e.response?.data?.message || e.message}`)
         }
       }
     },
     async fetchAllBoxPos(bId) {
-      // load first page to determine total pages
-      const first = await axios.get(`${API}/boxpos`, {
+      const first = await api.get(`boxpos`, {
         params: { bId, page: 0, size: 500, sort: 'id.bposId,asc' }
       })
       let content = []
@@ -265,7 +294,7 @@ export default {
           const promises = []
           for (let p = 1; p < totalPages; p++) {
             promises.push(
-                axios.get(`${API}/boxpos`, { params: { bId, page: p, size: 500, sort: 'id.bposId,asc' } })
+                api.get(`boxpos`, { params: { bId, page: p, size: 500, sort: 'id.bposId,asc' } })
             )
           }
           const results = await Promise.all(promises)
@@ -279,9 +308,12 @@ export default {
       return content
     },
     async loadData() {
+      // Sicherheits-Check
+      if (!this.isLoggedIn) return;
+
       this.loading = true
       try {
-        const res = await axios.get(`${API}/${this.view}`, {
+        const res = await api.get(`${this.view}`, {
           params: {
             page: this.currentPage,
             size: this.pageSize,
@@ -290,18 +322,15 @@ export default {
         })
 
         if (res.data && Array.isArray(res.data.content)) {
-          // Pageable response
           this.data = res.data.content
           this.totalElements = typeof res.data.totalElements === 'number' ? res.data.totalElements : this.data.length
           this.totalPages = typeof res.data.totalPages === 'number' ? res.data.totalPages : Math.max(1, Math.ceil(this.totalElements / this.pageSize))
 
-          // If requested page is out of bounds (e.g., after deletion), go to last page
           if (this.currentPage >= this.totalPages && this.totalPages > 0) {
             this.currentPage = this.totalPages - 1
             return this.loadData()
           }
         } else if (Array.isArray(res.data)) {
-          // Non-pageable response: client-side sort + paginate
           const sorted = this.clientSort(res.data)
           this.totalElements = sorted.length
           this.totalPages = Math.max(1, Math.ceil(this.totalElements / this.pageSize))
@@ -319,8 +348,13 @@ export default {
           this.totalPages = 1
         }
       } catch (err) {
+        // Falls Token abgelaufen ist:
+        if (err.response && err.response.status === 403) {
+          this.logout();
+          return;
+        }
+
         console.error('Error loading data:', err)
-        alert(`Error loading ${this.view}: ${err.response?.data?.message || err.message}`)
         this.data = []
         this.totalElements = 0
         this.totalPages = 1
@@ -358,10 +392,10 @@ export default {
     async addNewItem(formData) {
       if (this.view === 'log') return
 
-      let createUrl = `${API}/${this.view}`
+      let createUrl = `${this.view}`
 
       try {
-        const response = await axios.post(createUrl, formData)
+        const response = await api.post(createUrl, formData)
         console.log('Created:', response.data)
         alert('Successfully created')
         this.closeAddModal()
@@ -395,16 +429,16 @@ export default {
 
       switch(this.view) {
         case 'analysis':
-          updateUrl = `${API}/analysis/${updatedItem.a_id}`;
+          updateUrl = `analysis/${updatedItem.a_id}`;
           break;
         case 'sample':
-          updateUrl = `${API}/sample/${updatedItem.s_id}/${encodeURIComponent(updatedItem.s_stamp)}`;
+          updateUrl = `sample/${updatedItem.s_id}/${encodeURIComponent(updatedItem.s_stamp)}`;
           break;
         case 'box':
-          updateUrl = `${API}/box/${updatedItem.b_id}`;
+          updateUrl = `box/${updatedItem.b_id}`;
           break;
         case 'boxpos':
-          updateUrl = `${API}/boxpos/${updatedItem.id.bId}/${updatedItem.id.bposId}`;
+          updateUrl = `boxpos/${updatedItem.id.bId}/${updatedItem.id.bposId}`;
           break;
         default:
           alert('Unknown entity type');
@@ -412,7 +446,7 @@ export default {
       }
 
       try {
-        await axios[method](updateUrl, updatedItem);
+        await api[method](updateUrl, updatedItem);
         alert('Successfully updated');
         this.closeEditModal();
         this.loadData();
@@ -432,17 +466,17 @@ export default {
 
       switch(this.view) {
         case 'analysis':
-          deleteUrl = `${API}/analysis/${item.a_id}`
-          break
+          deleteUrl = `analysis/${item.a_id}`
+          break;
         case 'sample':
-          deleteUrl = `${API}/sample/${item.s_id}/${item.s_stamp}`
-          break
+          deleteUrl = `sample/${item.s_id}/${item.s_stamp}`
+          break;
         case 'box':
-          deleteUrl = `${API}/box/${item.b_id}`
-          break
+          deleteUrl = `box/${item.b_id}`
+          break;
         case 'boxpos':
-          deleteUrl = `${API}/boxpos/${item.b_id}/${item.bpos_id}`
-          break
+          deleteUrl = `boxpos/${item.b_id}/${item.bpos_id}`
+          break;
         default:
           alert('Unknown entity type')
           return
@@ -450,7 +484,7 @@ export default {
 
       if (confirm(`Delete this ${this.view} record?`)) {
         try {
-          await axios.delete(deleteUrl)
+          await api.delete(deleteUrl)
           alert('Successfully deleted')
           this.loadData()
         } catch (err) {

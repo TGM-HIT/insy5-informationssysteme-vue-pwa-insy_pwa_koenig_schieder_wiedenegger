@@ -5,10 +5,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import tgm.ac.at.gk911_informationssysteme_rest_backend.config.AuthController;
+import tgm.ac.at.gk911_informationssysteme_rest_backend.config.SecurityConfig;
 import tgm.ac.at.gk911_informationssysteme_rest_backend.controller.BoxPosController;
 import tgm.ac.at.gk911_informationssysteme_rest_backend.entity.BoxPos;
 import tgm.ac.at.gk911_informationssysteme_rest_backend.entity.BoxPosId;
@@ -26,6 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @ActiveProfiles("test")
 @WebMvcTest(controllers = BoxPosController.class)
+@Import(SecurityConfig.class)
 class BoxPosControllerWebMvcTest {
 
     @Autowired
@@ -39,6 +43,9 @@ class BoxPosControllerWebMvcTest {
 
     @MockBean
     SampleRepository sampleRepository;
+
+    @MockBean
+    AuthController authController;
 
     @Test
     @DisplayName("GET /api/boxpos returns 200 and empty page")

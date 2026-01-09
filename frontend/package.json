@@ -32,6 +32,7 @@
     "mochawesome-merge": "^5.1.0",
     "mochawesome-report-generator": "^6.3.2",
     "vite": "^5.4.0",
-    "vite-plugin-pwa": "^0.20.0"
+    "vite-plugin-pwa": "^0.20.0",
+    "vite-plugin-vuetify": "^2.0.3"
   }
 }

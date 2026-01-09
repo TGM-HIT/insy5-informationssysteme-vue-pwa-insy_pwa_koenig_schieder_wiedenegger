@@ -8,9 +8,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import tgm.ac.at.gk911_informationssysteme_rest_backend.config.AuthController;
+import tgm.ac.at.gk911_informationssysteme_rest_backend.config.SecurityConfig;
 import tgm.ac.at.gk911_informationssysteme_rest_backend.controller.AnalysisController;
 import tgm.ac.at.gk911_informationssysteme_rest_backend.entity.Analysis;
 import tgm.ac.at.gk911_informationssysteme_rest_backend.entity.SampleId;
@@ -28,6 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(controllers = AnalysisController.class)
 @ActiveProfiles("test")
+@Import(SecurityConfig.class)
 class Gk911InformationssystemeReStBackendApplicationTests {
 
     @Autowired
@@ -41,6 +46,9 @@ class Gk911InformationssystemeReStBackendApplicationTests {
 
     @MockBean
     SampleRepository sampleRepository;
+
+    @MockBean
+    AuthController authController;
 
     Analysis a1, a2, a3;
     private final java.util.concurrent.atomic.AtomicLong idGen = new java.util.concurrent.atomic.AtomicLong(100);
@@ -161,6 +169,7 @@ class Gk911InformationssystemeReStBackendApplicationTests {
 
     @Test
     @DisplayName("GET /api/analysis returns 200 and a page of results")
+    @WithMockUser
     void list_ok() throws Exception {
         mockMvc.perform(get("/api/analysis"))
                 .andExpect(status().isOk())
@@ -171,6 +180,7 @@ class Gk911InformationssystemeReStBackendApplicationTests {
 
     @Test
     @DisplayName("GET list supports pagination params")
+    @WithMockUser
     void list_pagination() throws Exception {
         mockMvc.perform(get("/api/analysis").param("size", "2").param("page", "0"))
                 .andExpect(status().isOk())
@@ -185,6 +195,7 @@ class Gk911InformationssystemeReStBackendApplicationTests {
 
     @Test
     @DisplayName("GET list empty page returns 200 and empty content")
+    @WithMockUser
     void list_empty_page() throws Exception {
         store.clear();
         mockMvc.perform(get("/api/analysis"))
@@ -195,6 +206,7 @@ class Gk911InformationssystemeReStBackendApplicationTests {
 
     @Test
     @DisplayName("List sorting by id desc works via param")
+    @WithMockUser
     void list_sorting_desc() throws Exception {
         mockMvc.perform(get("/api/analysis").param("sort", "id,desc"))
                 .andExpect(status().isOk())
@@ -204,6 +216,7 @@ class Gk911InformationssystemeReStBackendApplicationTests {
 
     @Test
     @DisplayName("GET by id returns 200 for existing")
+    @WithMockUser
     void get_existing_ok() throws Exception {
         mockMvc.perform(get("/api/analysis/{id}", a2.getId()))
                 .andExpect(status().isOk())
@@ -213,6 +226,7 @@ class Gk911InformationssystemeReStBackendApplicationTests {
 
     @Test
     @DisplayName("GET by id returns 404 for missing")
+    @WithMockUser
     void get_missing_404() throws Exception {
         mockMvc.perform(get("/api/analysis/{id}", 999999))
                 .andExpect(status().isNotFound());
@@ -220,6 +234,7 @@ class Gk911InformationssystemeReStBackendApplicationTests {
 
     @Test
     @DisplayName("GET invalid id format returns 400 (type mismatch)")
+    @WithMockUser
     void get_invalid_id_format() throws Exception {
         mockMvc.perform(get("/api/analysis/{id}", "not-a-number"))
                 .andExpect(status().isBadRequest());
@@ -227,6 +242,7 @@ class Gk911InformationssystemeReStBackendApplicationTests {
 
     @Test
     @DisplayName("POST create returns 201 with Location and body contains id")
+    @WithMockUser
     void post_create_201() throws Exception {
         Map<String, Object> payload = new HashMap<>();
         payload.put("comment", "created");
@@ -250,6 +266,7 @@ class Gk911InformationssystemeReStBackendApplicationTests {
 
     @Test
     @DisplayName("POST with id returns 400 Bad Request")
+    @WithMockUser
     void post_with_id_400() throws Exception {
         Map<String, Object> payload = new HashMap<>();
         payload.put("a_id", 123);
@@ -263,6 +280,7 @@ class Gk911InformationssystemeReStBackendApplicationTests {
 
     @Test
     @DisplayName("POST with long aFlags currently accepted (no validation)")
+    @WithMockUser
     void post_invalid_aFlags_accepts() throws Exception {
         Map<String, Object> payload = new HashMap<>();
         payload.put("aFlags", "1234567890abcdef");
@@ -278,6 +296,7 @@ class Gk911InformationssystemeReStBackendApplicationTests {
 
     @Test
     @DisplayName("POST with too long comment fails 400 (validation)")
+    @WithMockUser
     void post_invalid_comment_400() throws Exception {
         Map<String, Object> payload = new HashMap<>();
         payload.put("comment", "x".repeat(300));
@@ -292,6 +311,7 @@ class Gk911InformationssystemeReStBackendApplicationTests {
 
     @Test
     @DisplayName("POST without Content-Type yields 415")
+    @WithMockUser
     void post_without_content_type() throws Exception {
         mockMvc.perform(post("/api/analysis")
                         .content("{}"))
@@ -300,6 +320,7 @@ class Gk911InformationssystemeReStBackendApplicationTests {
 
     @Test
     @DisplayName("Unsupported media type returns 415 on POST")
+    @WithMockUser
     void post_unsupported_media_type() throws Exception {
         mockMvc.perform(post("/api/analysis")
                         .contentType(MediaType.TEXT_PLAIN)
@@ -309,6 +330,7 @@ class Gk911InformationssystemeReStBackendApplicationTests {
 
     @Test
     @DisplayName("POST payload with nulls is accepted (optional fields)")
+    @WithMockUser
     void post_with_nulls() throws Exception {
         Map<String, Object> payload = new HashMap<>();
         payload.put("comment", null);
@@ -325,6 +347,7 @@ class Gk911InformationssystemeReStBackendApplicationTests {
 
     @Test
     @DisplayName("PUT update existing returns 200 and persists changes")
+    @WithMockUser
     void put_update_200() throws Exception {
         Map<String, Object> payload = new HashMap<>();
         payload.put("comment", "updated");
@@ -342,6 +365,7 @@ class Gk911InformationssystemeReStBackendApplicationTests {
 
     @Test
     @DisplayName("PUT missing id returns 404")
+    @WithMockUser
     void put_missing_404() throws Exception {
         Map<String, Object> payload = new HashMap<>();
         payload.put("comment", "does-not-exist");
@@ -354,6 +378,7 @@ class Gk911InformationssystemeReStBackendApplicationTests {
 
     @Test
     @DisplayName("PUT with long aFlags currently accepted (no validation)")
+    @WithMockUser
     void put_invalid_aFlags_accepts() throws Exception {
         Map<String, Object> payload = new HashMap<>();
         payload.put("aFlags", "1234567890abcdefg");
@@ -366,6 +391,7 @@ class Gk911InformationssystemeReStBackendApplicationTests {
 
     @Test
     @DisplayName("PUT invalid id format returns 400 (type mismatch)")
+    @WithMockUser
     void put_invalid_id_format() throws Exception {
         mockMvc.perform(put("/api/analysis/{id}", "invalid")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -375,6 +401,7 @@ class Gk911InformationssystemeReStBackendApplicationTests {
 
     @Test
     @DisplayName("Update can clear fields (set null)")
+    @WithMockUser
     void put_clear_fields() throws Exception {
         Map<String, Object> payload = new HashMap<>();
         payload.put("comment", null);
@@ -390,6 +417,7 @@ class Gk911InformationssystemeReStBackendApplicationTests {
 
     @Test
     @DisplayName("DELETE existing returns 204 and removes entity")
+    @WithMockUser
     void delete_ok() throws Exception {
         mockMvc.perform(delete("/api/analysis/{id}", a1.getId()))
                 .andExpect(status().isNoContent());
@@ -399,6 +427,7 @@ class Gk911InformationssystemeReStBackendApplicationTests {
 
     @Test
     @DisplayName("DELETE missing returns 404")
+    @WithMockUser
     void delete_missing_404() throws Exception {
         mockMvc.perform(delete("/api/analysis/{id}", 999999))
                 .andExpect(status().isNotFound());
@@ -406,6 +435,7 @@ class Gk911InformationssystemeReStBackendApplicationTests {
 
     @Test
     @DisplayName("DELETE invalid id format returns 400 (type mismatch)")
+    @WithMockUser
     void delete_invalid_id_format() throws Exception {
         mockMvc.perform(delete("/api/analysis/{id}", "invalid"))
                 .andExpect(status().isBadRequest());
@@ -413,6 +443,7 @@ class Gk911InformationssystemeReStBackendApplicationTests {
 
     @Test
     @DisplayName("Method not allowed returns 405 on PUT collection")
+    @WithMockUser
     void method_not_allowed() throws Exception {
         mockMvc.perform(put("/api/analysis")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -422,6 +453,7 @@ class Gk911InformationssystemeReStBackendApplicationTests {
 
     @Test
     @DisplayName("E2E workflow: POST -> PUT -> GET -> DELETE")
+    @WithMockUser
     void e2e_workflow() throws Exception {
         Map<String, Object> payload = new HashMap<>();
         payload.put("comment", "workflow");
@@ -458,6 +490,7 @@ class Gk911InformationssystemeReStBackendApplicationTests {
 
     @Test
     @DisplayName("Create many then page through them")
+    @WithMockUser
     void create_many_and_page() throws Exception {
         for (int i = 0; i < 10; i++) {
             Map<String, Object> payload = new HashMap<>();

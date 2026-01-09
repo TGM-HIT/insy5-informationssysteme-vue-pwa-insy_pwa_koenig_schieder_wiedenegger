@@ -32,6 +32,8 @@ dependencies {
 
     // NEU: Spring Security für Login
     implementation 'org.springframework.boot:spring-boot-starter-security'
+    testImplementation 'org.springframework.security:spring-security-test'
+
 
     // NEU: JWT Token
     implementation 'io.jsonwebtoken:jjwt-api:0.11.5'

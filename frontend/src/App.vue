@@ -27,7 +27,7 @@
 
       <DataTable
           :title="view.toUpperCase()"
-          :columns="columns[view]"
+          :columns="visibleColumns"
           :data="data"
           :loading="loading"
           :sort-by="effectiveSortBy"

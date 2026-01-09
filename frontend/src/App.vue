@@ -1,5 +1,5 @@
 <template>
-  <div id="app">
+  <div id="app" :class="theme">
     <nav>
       <div class="nav-brand">
         <h1>Lab Data Management</h1>
@@ -11,6 +11,9 @@
         <a @click="view='boxpos'" :class="{active: view=='boxpos'}" data-cy="nav-boxpos">BoxPos</a>
         <a @click="view='log'" :class="{active: view=='log'}" data-cy="nav-log">Log</a>
       </div>
+      <button @click="toggleTheme" class="theme-switch-btn">
+        {{ theme === 'light' ? '🌙' : '☀️' }}
+      </button>
     </nav>
 
     <main>
@@ -103,6 +106,7 @@ export default {
   },
   data() {
     return {
+      theme: 'light',
       view: 'analysis',
       data: [],
       loading: false,
@@ -170,10 +174,21 @@ export default {
     }
   },
   mounted() {
-    this.loadColumnVisibility()
-    this.loadData()
+    this.loadTheme();
+    this.loadColumnVisibility();
+    this.loadData();
   },
   methods: {
+    toggleTheme() {
+      this.theme = this.theme === 'light' ? 'dark' : 'light';
+      localStorage.setItem('theme', this.theme);
+    },
+    loadTheme() {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme) {
+        this.theme = savedTheme;
+      }
+    },
     mapSortField(col) {
       if (!col) return 'id'
       const v = this.view
@@ -539,6 +554,26 @@ export default {
 </script>
 
 <style>
+:root {
+  --bg-color: #f3f4f6;
+  --text-color: #111827;
+  --nav-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --nav-text: white;
+  --btn-bg: white;
+  --btn-border: #e5e7eb;
+  --btn-text: #374151;
+}
+
+.dark {
+  --bg-color: #111827;
+  --text-color: #f3f4f6;
+  --nav-bg: linear-gradient(135deg, #374151 0%, #111827 100%);
+  --nav-text: #f3f4f6;
+  --btn-bg: #374151;
+  --btn-border: #4b5563;
+  --btn-text: #f3f4f6;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -547,18 +582,19 @@ export default {
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  background: #f3f4f6;
+  background: var(--bg-color);
+  color: var(--text-color);
   min-height: 100vh;
 }
 
 #app {
   min-height: 100vh;
-  background: #f3f4f6;
+  background: var(--bg-color);
 }
 
 nav {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: var(--nav-bg);
+  color: var(--nav-text);
   padding: 18px 32px;
   display: flex;
   justify-content: space-between;
@@ -578,7 +614,7 @@ nav {
 }
 
 .nav-links a {
-  color: white;
+  color: var(--nav-text);
   cursor: pointer;
   padding: 9px 18px;
   border-radius: 7px;
@@ -596,6 +632,14 @@ nav {
 .nav-links a.active {
   background: rgba(255, 255, 255, 0.25);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.theme-switch-btn {
+  background: none;
+  border: none;
+  color: var(--nav-text);
+  font-size: 24px;
+  cursor: pointer;
 }
 
 main {
@@ -630,8 +674,9 @@ main {
 }
 
 .pagination .btn {
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: var(--btn-bg);
+  border: 1px solid var(--btn-border);
+  color: var(--btn-text);
   padding: 6px 12px;
   border-radius: 6px;
   cursor: pointer;
@@ -650,7 +695,7 @@ main {
 
 .pagination .page-info {
   font-size: 14px;
-  color: #374151;
+  color: var(--text-color);
 }
 
 .table-controls {

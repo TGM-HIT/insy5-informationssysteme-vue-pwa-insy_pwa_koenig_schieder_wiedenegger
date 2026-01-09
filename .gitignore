@@ -1,0 +1,95 @@
+# ========================================
+# Gradle
+# ========================================
+.gradle/
+build/
+out/
+!gradle/wrapper/gradle-wrapper.jar
+
+# ========================================
+# Java / Build Artifacts
+# ========================================
+*.jar
+*.war
+*.ear
+*.class
+*.log
+HELP.md
+
+# ========================================
+# Test Coverage
+# ========================================
+*.exec
+coverage/
+coverage-summary.json
+.jacoco/
+build/reports/jacoco/
+build/jacoco/
+
+# ========================================
+# IDEs
+# ========================================
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# VS Code
+.vscode/*
+!.vscode/extensions.json
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# NetBeans
+nbproject/
+
+# Other
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ========================================
+# Node / Frontend
+# ========================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+dist/
+dist-ssr/
+*.local
+*.tsbuildinfo
+.eslintcache
+
+# ========================================
+# Testing Tools
+# ========================================
+# Cypress
+cypress/videos/
+cypress/screenshots/
+cypress/reports/
+
+# Vitest
+__screenshots__/
+
+# ========================================
+# OS Specific
+# ========================================
+.DS_Store
+Thumbs.db
+
+# ========================================
+# Docker / Environment
+# ========================================
+.env
+.env.local
+.env.*.local
+**/backup/

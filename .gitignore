@@ -1,0 +1,28 @@
+# Gradle
+.gradle/
+build/
+out/
+!gradle/wrapper/gradle-wrapper.jar
+HELP.md
+
+# IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# JARs / binaries
+*.jar
+*.war
+*.ear
+
+# Docker
+**/.env
+backup

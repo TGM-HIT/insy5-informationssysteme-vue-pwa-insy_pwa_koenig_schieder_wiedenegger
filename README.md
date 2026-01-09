@@ -198,6 +198,230 @@ Um Service Worker nutzen zu können, ist HTTPS notwendig. Nach der Umstellung ka
     ```
     Dadurch wird automatisch HTTPS verwendet und "Mixed Content" wird vermieden.
 
+
+# Login-System für Lab Data Management PWA
+
+## Projektübersicht
+
+Implementierung eines vollständigen Benutzer-Authentifizierungssystems für die bestehende Vue.js PWA (Progressive Web App) mit Spring Boot Backend.
+
+**Projekt:** insy5-informationssysteme-vue-pwa  
+**Entwickler:** Claudio Wiedenegger  
+**Datum:** Januar 2026  
+**Schulfach:** INSY (Informationssysteme) - 5AHIT
+
+---
+
+## Implementierte Features
+
+### Backend (Spring Boot)
+
+#### 1. Spring Security Konfiguration
+**Datei:** `backend/src/main/java/.../config/SecurityConfig.java`
+
+- CSRF-Schutz deaktiviert (für REST-API)
+- CORS deaktiviert (für lokale Entwicklung)
+- Stateless Session Management (keine Server-Sessions)
+- BCrypt Password Encoder für sichere Passwort-Speicherung
+- In-Memory Benutzerverwaltung mit drei Rollen
+
+#### 2. Authentifizierungs-Controller
+**Datei:** `backend/src/main/java/.../controller/AuthController.java`
+
+- `POST /api/auth/login` - Login-Endpoint
+- Validierung von Benutzername und Passwort
+- Rückgabe von Token, Username und Rolle bei Erfolg
+- HTTP 401 Unauthorized bei ungültigen Anmeldedaten
+
+#### 3. Dependencies
+**Datei:** `backend/build.gradle`
+
+```groovy
+implementation 'org.springframework.boot:spring-boot-starter-security'
+implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
+runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+```
+
+---
+
+### Frontend (Vue.js)
+
+#### 1. Login-Formular Komponente
+**Datei:** `frontend/src/components/LoginForm.vue`
+
+- Benutzername und Passwort Eingabefelder
+- Fehleranzeige bei ungültigen Anmeldedaten
+- Loading-State während des Login-Vorgangs
+- Emittiert `login-success` Event bei erfolgreichem Login
+
+#### 2. Auth Service
+**Datei:** `frontend/src/services/AuthService.js`
+
+| Methode | Beschreibung |
+|---------|--------------|
+| `login(username, password)` | Sendet Login-Request an API |
+| `logout()` | Entfernt Benutzer aus localStorage |
+| `getCurrentUser()` | Gibt aktuellen Benutzer zurück |
+| `isLoggedIn()` | Prüft ob Benutzer eingeloggt ist |
+| `getRole()` | Gibt Benutzerrolle zurück |
+
+#### 3. API Interceptor
+**Datei:** `frontend/src/services/api.js`
+
+- Axios-Instanz mit Base-URL `http://localhost:8081/api/`
+- Request Interceptor: Fügt automatisch `Authorization: Bearer <token>` Header hinzu
+- Response Interceptor: Logging von API-Fehlern
+
+#### 4. App Integration
+**Datei:** `frontend/src/App.vue`
+
+- Bedingte Anzeige: Login-Formular ODER Hauptanwendung
+- `onLoginSuccess()` - Lädt Daten nach erfolgreichem Login
+- `logout()` - Benutzer-Abmeldung mit Daten-Reset
+- Automatische Session-Wiederherstellung beim Seitenaufruf
+
+---
+
+## Benutzer-Credentials
+
+| Benutzername | Passwort | Rolle |
+|--------------|----------|-------|
+| admin | password | ADMIN |
+| reader | password | READER |
+| researcher | password | RESEARCHER |
+
+---
+
+## Technologie-Stack
+
+| Komponente | Technologie |
+|------------|-------------|
+| Frontend | Vue.js 3, Vuetify |
+| Backend | Spring Boot, Spring Security |
+| Datenbank | PostgreSQL |
+| Container | Docker, Docker Compose |
+| Build-Tool | Gradle (Backend), npm (Frontend) |
+
+---
+
+## Projektstruktur
+
+```
+├── backend/
+│   ├── src/main/java/.../
+│   │   ├── config/
+│   │   │   └── SecurityConfig.java      # Spring Security Konfiguration
+│   │   └── controller/
+│   │       └── AuthController.java      # Login-Endpoint
+│   └── build.gradle                     # Dependencies
+│
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   └── LoginForm.vue            # Login-Formular UI
+│   │   ├── services/
+│   │   │   ├── api.js                   # Axios mit Interceptors
+│   │   │   └── AuthService.js           # Login/Logout Logik
+│   │   ├── App.vue                      # Haupt-Komponente mit Login-Integration
+│   │   └── main.js                      # Vuetify Setup
+│   ├── package.json
+│   └── package-lock.json
+│
+└── docker-compose.yml
+```
+
+---
+
+## Installation & Start
+
+### 1. Backend bauen
+```bash
+cd backend
+./gradlew bootJar
+```
+
+### 2. Docker Container starten
+```bash
+docker-compose up --build -d
+```
+
+### 3. Anwendung öffnen
+- Frontend: http://localhost:8082
+- Backend API: http://localhost:8081/api
+
+---
+
+## Login-Flow
+
+```
+┌─────────────┐     POST /api/auth/login       ┌─────────────┐
+│   Frontend  │ ──────────────────────────────▶│   Backend   │
+│  LoginForm  │    {username, password}        |AuthController│
+└─────────────┘                                └─────────────┘
+                                                      │
+                                                      ▼
+                                               ┌─────────────┐
+                                               │   Spring    │
+                                               │  Security   │
+                                               └─────────────┘
+                                                      │
+                     {token, username, role}          │
+┌─────────────┐ ◀──────────────────────────────────────┘
+│   Frontend  │
+│ AuthService │ ──▶ localStorage speichern
+└─────────────┘
+       │
+       ▼
+┌─────────────┐
+│   App.vue   │ ──▶ isLoggedIn = true
+│  loadData() │ ──▶ Daten laden mit Token
+└─────────────┘
+```
+
+---
+
+## Probleme & Lösungen während der Entwicklung
+
+### Problem 1: Login Redirect Loop
+**Symptom:** Nach dem Login wurde man sofort wieder ausgeloggt.
+
+**Ursache:** Der Response Interceptor in `api.js` hat bei jedem API-Fehler (z.B. 403) automatisch `window.location.reload()` ausgeführt.
+
+**Lösung:** Interceptor vereinfacht - nur noch Logging, kein automatisches Logout.
+
+### Problem 2: 403 Forbidden auf Login-Endpoint
+**Symptom:** `POST /api/auth/login` gab 403 zurück.
+
+**Ursache:** Spring Security 6 erfordert neue Syntax für die Konfiguration.
+
+**Lösung:** `AbstractHttpConfigurer::disable` statt Lambda-Ausdrücke verwenden.
+
+### Problem 3: Gradle Wrapper Corruption
+**Symptom:** `zip END header not found` beim Docker Build.
+
+**Ursache:** Beschädigte JAR-Datei im Gradle Cache durch gesperrte Dateien.
+
+**Lösung:**
+1. IntelliJ schließen
+2. Java-Prozesse beenden
+3. Gradle Cache löschen: `rd /s /q C:\Users\<user>\.gradle\wrapper\dists`
+4. IntelliJ neu starten
+
+---
+
+## Weiterentwicklung (TODO)
+
+- [ ] Echte JWT Token Generierung (aktuell: `simple-token-{username}`)
+- [ ] Rollenbasierte Zugriffskontrolle (RBAC)
+- [ ] Token-Ablauf und Refresh-Token
+- [ ] Benutzer in Datenbank statt In-Memory
+- [ ] Passwort-Änderung Funktion
+- [ ] PWA Features (Service Worker, Offline-Support)
+
+---
+
+
 ## Quellen
 
 [1] „Quickstart for GitHub Actions“, GitHub Docs. Zugegriffen: 8. Jänner 2026. [Online]. Verfügbar unter: https://docs.github.com/en/actions/quickstart

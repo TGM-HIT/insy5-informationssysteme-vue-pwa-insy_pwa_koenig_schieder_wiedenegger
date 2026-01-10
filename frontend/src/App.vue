@@ -563,34 +563,51 @@ export default {
       }
     },
 
+    generateDefaultVisibility() {
+      const visibility = {};
+      Object.keys(this.columns).forEach(view => {
+        visibility[view] = {};
+        this.columns[view].forEach(col => {
+          visibility[view][col] = true;
+        });
+      });
+      return visibility;
+    },
+
     loadColumnVisibility() {
-      const saved = localStorage.getItem('columnVisibility')
+      const defaults = this.generateDefaultVisibility();
+      const saved = localStorage.getItem('columnVisibility');
+
       if (saved) {
         try {
-          const parsed = JSON.parse(saved)
-          // Überprüfe ob der gespeicherte Wert valide ist
+          const parsed = JSON.parse(saved);
           if (parsed && typeof parsed === 'object') {
-            this.columnVisibility = parsed
-            return
+            // Merge saved state into the default state
+            Object.keys(defaults).forEach(view => {
+              if (parsed[view]) {
+                Object.keys(defaults[view]).forEach(col => {
+                  // Use saved value if it's a boolean, otherwise the default (true) is kept
+                  if (typeof parsed[view][col] === 'boolean') {
+                    defaults[view][col] = parsed[view][col];
+                  }
+                });
+              }
+            });
+            this.columnVisibility = defaults;
+            this.saveColumnVisibility(); // Save the merged state
+            return;
           }
         } catch (e) {
-          console.error('Error parsing saved column visibility:', e)
+          console.error('Error parsing saved column visibility:', e);
         }
       }
-      // Falls nichts gespeichert oder Fehler: initialisiere
-      this.initializeColumnVisibility()
+      // If nothing saved or error, just initialize
+      this.initializeColumnVisibility();
     },
 
     initializeColumnVisibility() {
-      const visibility = {}
-      Object.keys(this.columns).forEach(view => {
-        visibility[view] = {}
-        this.columns[view].forEach(col => {
-          visibility[view][col] = true  // Alle auf true setzen
-        })
-      })
-      this.columnVisibility = visibility
-      this.saveColumnVisibility()
+      this.columnVisibility = this.generateDefaultVisibility();
+      this.saveColumnVisibility();
     },
 
     saveColumnVisibility() {

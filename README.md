@@ -421,6 +421,166 @@ docker-compose up --build -d
 
 ---
 
+## PWA Konfiguration
+
+Die Progressive Web App Funktionalität wurde mit dem Vite PWA Plugin implementiert. Die Konfiguration erfolgt in `vite.config.js`:
+
+```javascript
+import { VitePWA } from 'vite-plugin-pwa'
+
+VitePWA({
+    registerType: 'autoUpdate',
+    manifest: {
+        name: 'Labor Management System',
+        short_name: 'LabMS',
+        display: 'standalone',
+        theme_color: '#667eea',
+        icons: [/* ... */]
+    },
+    workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        runtimeCaching: [/* API Caching */]
+    }
+})
+```
+
+Die Service Worker Registrierung erfolgt in `main.js`:
+
+```javascript
+import { registerSW } from 'virtual:pwa-register'
+
+registerSW({
+    onNeedRefresh() {
+        if (confirm('Neue Version verfügbar! Jetzt aktualisieren?')) {
+            updateSW(true)
+        }
+    },
+    onOfflineReady() {
+        console.log('App ist offline-bereit')
+    }
+})
+```
+
+Das Web App Manifest definiert die Installierbarkeit. Der Parameter `display: 'standalone'` ermöglicht die Darstellung ohne Browser-UI im Vollbildmodus. Die App wird über Icons in zwei Größen (192x192 und 512x512 Pixel) auf dem Startbildschirm darstellbar.
+
+Service Worker ermöglichen Offline-Funktionalität durch Caching von statischen Ressourcen und API-Antworten. Die `globPatterns` definieren welche Dateitypen beim ersten Laden gecacht werden. Die `runtimeCaching` Strategie verwendet `NetworkFirst` für API-Calls mit Fallback auf gecachte Daten bei fehlender Internetverbindung.
+
+Die Offline-Funktionalität erfordert HTTPS. Service Worker funktionieren ausschließlich über HTTPS-Verbindungen oder auf localhost. Für Production wurde ein DuckDNS Domain mit Let's Encrypt SSL-Zertifikat konfiguriert. Nginx dient als Reverse Proxy und leitet Port 80/443 auf den Application Port weiter.
+
+## Auswahlfeld von zu anzeigenden Attributen der einzelnen Tabellen
+
+Die Spaltenauswahl ermöglicht das Ein- und Ausblenden einzelner Tabellenspalten. Die Implementierung besteht aus der `ColumnSelector.vue` Komponente und State Management in `App.vue`.
+
+Der State wird in `columnVisibility` verwaltet:
+
+```javascript
+data() {
+    return {
+        columnVisibility: {
+            analysis: {},
+            sample: {},
+            box: {},
+            boxpos: {},
+            log: {}
+        }
+    }
+}
+```
+
+Eine Computed Property filtert die sichtbaren Spalten:
+
+```javascript
+computed: {
+    visibleColumns() {
+        const view = this.view
+        const allCols = this.columns[view]
+        const visibility = this.columnVisibility[view]
+        return allCols.filter(col => visibility[col] !== false)
+    }
+}
+```
+
+Die Benutzerpräferenzen werden in localStorage persistiert:
+
+```javascript
+saveColumnVisibility() {
+    localStorage.setItem('columnVisibility', JSON.stringify(this.columnVisibility))
+}
+
+loadColumnVisibility() {
+    const saved = localStorage.getItem('columnVisibility')
+    if (saved) {
+        this.columnVisibility = JSON.parse(saved)
+    }
+}
+```
+
+Die `ColumnSelector.vue` Komponente rendert eine Dropdown-Liste mit Checkboxen für jede Spalte. Um zu verhindern dass alle Spalten ausgeblendet werden, wird die letzte sichtbare Spalte deaktiviert. Die Komponente emittiert Events für toggle, select-all und reset Aktionen.
+
+Die DataTable Komponente erhält die gefilterte Spaltenliste über Props:
+
+```vue
+<DataTable :columns="visibleColumns" />
+```
+
+## Light/Dark Theme
+
+Das Theme-System verwendet CSS Custom Properties und eine zentrale Theme-Verwaltung. Die Implementierung erfolgt mit der `ThemeSwitcher.vue` Komponente und globalen CSS Variables.
+
+Der Theme State wird in `App.vue` verwaltet:
+
+```javascript
+data() {
+    return {
+        isDarkMode: false
+    }
+},
+methods: {
+    toggleTheme() {
+        this.isDarkMode = !this.isDarkMode
+        localStorage.setItem('darkMode', this.isDarkMode)
+        this.applyTheme()
+    },
+    applyTheme() {
+        if (this.isDarkMode) {
+            document.documentElement.classList.add('dark-mode')
+        } else {
+            document.documentElement.classList.remove('dark-mode')
+        }
+    }
+}
+```
+
+CSS Variables definieren die Theme-Farben:
+
+```css
+:root {
+    --bg-primary: #f3f4f6;
+    --bg-secondary: #ffffff;
+    --text-primary: #1f2937;
+    --border-color: #e5e7eb;
+}
+
+:root.dark-mode {
+    --bg-primary: #111827;
+    --bg-secondary: #1f2937;
+    --text-primary: #f9fafb;
+    --border-color: #374151;
+}
+```
+
+Alle Komponenten referenzieren diese Variables statt feste Farbwerte:
+
+```css
+.table-container {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+```
+
+Die Theme-Präferenz wird beim Laden aus localStorage wiederhergestellt. Der Theme-Wechsel erfolgt durch Hinzufügen oder Entfernen der `dark-mode` CSS-Klasse am `document.documentElement`. Alle Farbübergänge werden mit CSS Transitions animiert für eine flüssige Benutzererfahrung.
+
+***
 
 ## Quellen
 

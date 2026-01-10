@@ -1,6 +1,15 @@
 ![Build Status](https://github.com/TGM-HIT/insy5-informationssysteme-vue-pwa-insy_pwa_koenig_schieder_wiedenegger/actions/workflows/gradle.yml/badge.svg?branch=main)
-![Coverage](.github/badges/jacoco.svg)
-![Branches](.github/badges/branches.svg)
+
+## How to use
+
+**URL:** [https://46.101.148.160/](https://46.101.148.160/)
+Empfehlung: In einem privaten Fenster öfnen, um Cokies zu vermeiden. Wenn nicht ist es möglich, dass diese deaktiviert werden müssen, um eine vollsätndige Funktionalität zu gewährleisten.
+
+**Login Credentials:**
+
+Benutzername: admin
+
+Passwort: password
 
 # PWA
 
@@ -8,40 +17,42 @@ Author: König, Schieder, Wiedenegger
 
 ### Einführung
 
-Bei dieser Übung soll die vorhandene Implementierung in der Cloud 
+Bei dieser Übung soll die vorhandene Implementierung in der Cloud
 deployed werden und auch als PWA für mobile Endgeräte angeboten werden.
 
 ### Ziele
 
 Das Ziel dieser Übung ist das Bereitstellen einer Webanwendung in der
- Cloud. Dabei sollen Werkzeuge zum Einsatz kommen, die das leichte 
-Umsetzen, Testen und Bereitstellen beschleunigen. Bestehender Code soll 
-dabei angepasst und erweitert werden ohne die Funktionalität zu 
+Cloud. Dabei sollen Werkzeuge zum Einsatz kommen, die das leichte
+Umsetzen, Testen und Bereitstellen beschleunigen. Bestehender Code soll
+dabei angepasst und erweitert werden ohne die Funktionalität zu
 beeinträchtigen.
 
 ## Workflows CI/CD
+
 Dieses Projekt nutzt GitHub Actions für automatisierte Tests, Coverage-Reports und Release-Management. Alle Workflows sind in `.github/workflows/` definiert und triggern auf verschiedene Events.
 
 **Was sind GitHub Actions?** [1]
+
 - Automatisierte Abläufe (Workflows), die auf Events reagieren
 - Laufen auf GitHub-Servern (Runner) → Ubuntu, Windows, macOS
 - Definiert in YAML-Dateien
 
-
 Was ist ein Job? [2] -> Job = Zusammenhängende Aufgabe, die auf einem Runner ausgeführt wird
 zb. das deployen oder testen.
 
-
-
 ## CD Workflow zur erklärung von Workflows
+
 mit dem Trigger on -> Bedeutet der workflow wird aktiviert wenn ein tag mit v gepusht wird.
-```yml 
+
+```yml
 on:
   push:
     tags: ['v*']
 ```
 
 Weiters werden jobs definiert und runner definiert
+
 ```yml
 jobs:
   release:
@@ -49,14 +60,15 @@ jobs:
 ```
 
 Und dann können die Steps gesetzt werden:
+
 ```yml
 - uses: actions/checkout@v4
 - uses: actions/setup-java@v4  # Java 17
 - uses: gradle/actions/setup-gradle@v4  # Caching
 - run: chmod +x ./gradlew  # Linux braucht executable flag
 ```
-Wichtig: chmod +x nötig -> weil Windows keine Unix-Permissions setzt.
 
+Wichtig: chmod +x nötig -> weil Windows keine Unix-Permissions setzt.
 
 *Release erstellen*
 
@@ -69,53 +81,55 @@ Wichtig: chmod +x nötig -> weil Windows keine Unix-Permissions setzt.
   env:
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
+
 bootJar: Executable JAR mit allen Dependencies, GITHUB_TOKEN: Automatisch verfügbar, Benötigt permissions: contents: write
-
-
-
-
 
 Nach dem ersten push ist aufgefallen es gibt ein permissionproblem das github nicht umgehen kann desshalb:
 So wird gradle exicutable gemacht:
+
 ```
 git update-index --chmod=+x gradlew 
 ```
-
-
 
 ## Badges & JaCoCo Integration
 
 Um die Qualität des Codes sichtbar zu machen, wurden Badges für den Build-Status und die Testabdeckung (Coverage) in die `README.md` integriert.
 
 ### 1. Build Status Badge
+
 zeigt an ob der letzte Build erfolgreich war (passing), Dieser wird direkt von GitHubbereitgestellt
 Einbindung:
+
 ```bash
   ![Build Status](https://github.com/<USER>/<REPO>/actions/workflows/gradle.yml/badge.svg?branch=main)
 ```
 
 ### 2. JaCoCo Coverage Badges [3]
+
 Diese Badges zeigen an, wie viel Prozent des Codes durch Tests abgedeckt sind.
 **Tool:** [JaCoCo](https://www.eclemma.org/jacoco/) (Java Code Coverage) Plugin für Gradle.
 
 Im Workflow:
-  1. Im Gradle-Build (`build.gradle`) wird das JaCoCo-Plugin aktiviert und der Report konfiguriert (`jacocoTestReport`).
-  2. Die GitHub Action (`gradle.yml`) führt `./gradlew test jacocoTestReport` aus.
-  3. Ein spezieller Step (`cicirello/jacoco-badge-generator`) liest den generierten CSV-Report (`jacocoTestReport.csv`) aus.
-  4. Der Generator erstellt SVG-Dateien (Badges) und speichert sie im Ordner `.github/badges/`.
-  5. Dann wird commited und beim pushen können die infos online eingesehen werden
+
+1. Im Gradle-Build (`build.gradle`) wird das JaCoCo-Plugin aktiviert und der Report konfiguriert (`jacocoTestReport`).
+2. Die GitHub Action (`gradle.yml`) führt `./gradlew test jacocoTestReport` aus.
+3. Ein spezieller Step (`cicirello/jacoco-badge-generator`) liest den generierten CSV-Report (`jacocoTestReport.csv`) aus.
+4. Der Generator erstellt SVG-Dateien (Badges) und speichert sie im Ordner `.github/badges/`.
+5. Dann wird commited und beim pushen können die infos online eingesehen werden
 
 ## Cloud-Deployment
 
-Für das Cloud-Deployment wurde das GitHub Student Developer Pack [4] genutzt, welches 200$ Guthaben für DigitalOcean bereitstellt. 
+Für das Cloud-Deployment wurde das GitHub Student Developer Pack [4] genutzt, welches 200$ Guthaben für DigitalOcean bereitstellt.
 
 Es wurde ein **Droplet** (virtueller Server) mit folgender Konfiguration erstellt:
+
 - **OS:** Ubuntu mit vorinstalliertem Docker
 - **Ressourcen:** 2 vCPUs, 4 GB RAM, 25 GB SSD Speicher
 
 Nach der Erstellung des Droplets wurde das GitHub-Repository direkt auf den Server geklont. Anschließend wurden die Container mittels `docker-compose` gebaut und gestartet, wodurch die Anwendung (Frontend, Backend und Datenbank) nun öffentlich erreichbar ist. [5]
 
 ### Schnell start am Droplet oder auch lokal:
+
 ```bash
 # Am Server zuerst rein SSHn 
 ssh root@46.101.148.160
@@ -135,12 +149,15 @@ docker compose up --build -d
 ```
 
 ### Backup und Restore ausführen
+
 Um den Backup Ordner auf den Server zu bekommen einfach mit ssh:
+
 ```bash
 scp -r ./backup root@DEINE_SERVER_IP:/root/DEIN_REPO_NAME/
 ```
 
 Weiters einfach wieder reinsshn und:
+
 ```bash
 ls -la backup/
 
@@ -150,14 +167,16 @@ docker cp backup postgres13:/tmp/backup
 # Prüfen
 docker exec postgres13 ls -la /tmp/backup/
 ```
+
 Pfade im SQL-File anpassen
+
 ```bash
 # Falls restore.sql absolute Pfade enthält, anpassen
 docker exec postgres13 sed -i 's|/backup/|/tmp/backup/|g' /tmp/backup/restore.sql
 ```
 
-
 #### Datenbank neu erstellen und Restore durchführen
+
 ```bash
 # Backend stoppen (Verbindungen trennen)
 docker compose stop backend
@@ -175,6 +194,7 @@ docker compose start backend
 ```
 
 Überprüfen:
+
 ```bash
 docker exec postgres13 psql -U postgres -d venlab -c "SELECT COUNT(*) FROM venlab.box;"
 docker exec postgres13 psql -U postgres -d venlab -c "SELECT COUNT(*) FROM venlab.analysis;"
@@ -187,29 +207,25 @@ Um Service Worker nutzen zu können, ist HTTPS notwendig. Nach der Umstellung ka
 #### Lösung
 
 **Traefik als Reverse Proxy [6]:** In der `docker-compose.yml` wurde Traefik als zentraler Eingangspunkt konfiguriert.
-    -   Alle Anfragen an `https://<domain>/api/...` werden an den Backend-Container weitergeleitet.
-    -   Alle anderen Anfragen an den Frontend-Container.
-    -   Eine automatische Weiterleitung von HTTP zu HTTPS wurde eingerichtet.
-
+- Alle Anfragen an `https://<domain>/api/...` werden an den Backend-Container weitergeleitet.
+- Alle anderen Anfragen an den Frontend-Container.
+- Eine automatische Weiterleitung von HTTP zu HTTPS wurde eingerichtet.
 
 **Relative API-Pfade im Frontend [7]:** In `frontend/src/App.vue` wurde die API-Basis-URL von einer absoluten (`http://localhost:8081/api`) zu einer relativen URL (`/api`) geändert.
-    ```javascript
-    const API = '/api'; 
-    ```
-    Dadurch wird automatisch HTTPS verwendet und "Mixed Content" wird vermieden.
-
+ ```javascript
+ const API = '/api'; ```
+ Dadurch wird automatisch HTTPS verwendet und "Mixed Content" wird vermieden.
 
 # Login-System für Lab Data Management PWA
 
 ## Projektübersicht
-
-
 
 ## Implementierte Features
 
 ### Backend (Spring Boot)
 
 #### 1. Spring Security Konfiguration
+
 **Datei:** `backend/src/main/java/.../config/SecurityConfig.java`
 
 - CSRF-Schutz deaktiviert (für REST-API)
@@ -219,6 +235,7 @@ Um Service Worker nutzen zu können, ist HTTPS notwendig. Nach der Umstellung ka
 - In-Memory Benutzerverwaltung mit drei Rollen
 
 #### 2. Authentifizierungs-Controller
+
 **Datei:** `backend/src/main/java/.../controller/AuthController.java`
 
 - `POST /api/auth/login` - Login-Endpoint
@@ -227,6 +244,7 @@ Um Service Worker nutzen zu können, ist HTTPS notwendig. Nach der Umstellung ka
 - HTTP 401 Unauthorized bei ungültigen Anmeldedaten
 
 #### 3. Dependencies
+
 **Datei:** `backend/build.gradle`
 
 ```groovy
@@ -236,10 +254,10 @@ runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
 runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 ```
 
-
 ### Frontend (Vue.js)
 
 #### 1. Login-Formular Komponente
+
 **Datei:** `frontend/src/components/LoginForm.vue`
 
 - Benutzername und Passwort Eingabefelder
@@ -248,10 +266,11 @@ runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 - Emittiert `login-success` Event bei erfolgreichem Login
 
 #### 2. Auth Service
+
 **Datei:** `frontend/src/services/AuthService.js`
 
 | Methode | Beschreibung |
-|---------|--------------|
+| --- | --- |
 | `login(username, password)` | Sendet Login-Request an API |
 | `logout()` | Entfernt Benutzer aus localStorage |
 | `getCurrentUser()` | Gibt aktuellen Benutzer zurück |
@@ -259,6 +278,7 @@ runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 | `getRole()` | Gibt Benutzerrolle zurück |
 
 #### 3. API Interceptor
+
 **Datei:** `frontend/src/services/api.js`
 
 - Axios-Instanz mit Base-URL `http://localhost:8081/api/`
@@ -266,6 +286,7 @@ runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 - Response Interceptor: Logging von API-Fehlern
 
 #### 4. App Integration
+
 **Datei:** `frontend/src/App.vue`
 
 - Bedingte Anzeige: Login-Formular ODER Hauptanwendung
@@ -273,14 +294,11 @@ runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 - `logout()` - Benutzer-Abmeldung mit Daten-Reset
 - Automatische Session-Wiederherstellung beim Seitenaufruf
 
-
 ## Benutzer Credential
 
 | Benutzername | Passwort | Rolle |
-|--------------|----------|-------|
+| --- | --- | --- |
 | admin | password | ADMIN |
-
-
 
 ## Login-Flow
 
@@ -309,10 +327,10 @@ runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 └─────────────┘
 ```
 
-
 ## Probleme & Lösungen während der Entwicklung
 
 ### Problem 1: Login Redirect Loop
+
 **Symptom:** Nach dem Login wurde man sofort wieder ausgeloggt.
 
 **Ursache:** Der Response Interceptor in `api.js` hat bei jedem API-Fehler (z.B. 403) automatisch `window.location.reload()` ausgeführt.
@@ -320,6 +338,7 @@ runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 **Lösung:** Interceptor vereinfacht - nur noch Logging, kein automatisches Logout.
 
 ### Problem 2: 403 Forbidden auf Login-Endpoint
+
 **Symptom:** `POST /api/auth/login` gab 403 zurück.
 
 **Ursache:** Spring Security 6 erfordert neue Syntax für die Konfiguration.
@@ -327,11 +346,13 @@ runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 **Lösung:** `AbstractHttpConfigurer::disable` statt Lambda-Ausdrücke verwenden.
 
 ### Problem 3: Gradle Wrapper Corruption
+
 **Symptom:** `zip END header not found` beim Docker Build.
 
 **Ursache:** Beschädigte JAR-Datei im Gradle Cache durch gesperrte Dateien.
 
 **Lösung:**
+
 1. IntelliJ schließen
 2. Java-Prozesse beenden
 3. Gradle Cache löschen: `rd /s /q C:\Users\<user>\.gradle\wrapper\dists`

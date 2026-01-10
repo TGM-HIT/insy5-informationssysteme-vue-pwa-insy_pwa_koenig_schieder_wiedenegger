@@ -212,17 +212,13 @@ Um Service Worker nutzen zu können, ist HTTPS notwendig. Nach der Umstellung ka
 - Eine automatische Weiterleitung von HTTP zu HTTPS wurde eingerichtet.
 
 **Relative API-Pfade im Frontend [7]:** In `frontend/src/App.vue` wurde die API-Basis-URL von einer absoluten (`http://localhost:8081/api`) zu einer relativen URL (`/api`) geändert.
- ```javascript
+
  const API = '/api'; ```
  Dadurch wird automatisch HTTPS verwendet und "Mixed Content" wird vermieden.
 
 # Login-System für Lab Data Management PWA
 
-## Projektübersicht
 
-## Implementierte Features
-
-### Backend (Spring Boot)
 
 #### 1. Spring Security Konfiguration
 

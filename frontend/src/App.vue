@@ -205,8 +205,8 @@ export default {
     this.loadTheme();
 
     if (this.isLoggedIn) {
-      this.loadData();
       this.loadColumnVisibility();
+      this.loadData();
     } else {
       console.log("Nicht eingeloggt. Zeige Login-Maske.");
     }
@@ -564,27 +564,33 @@ export default {
     },
 
     loadColumnVisibility() {
-      const saved = localStorage.getItem('columnVisibility');
-      let savedVisibility = {};
+      const saved = localStorage.getItem('columnVisibility')
       if (saved) {
         try {
-          savedVisibility = JSON.parse(saved);
+          const parsed = JSON.parse(saved)
+          // Überprüfe ob der gespeicherte Wert valide ist
+          if (parsed && typeof parsed === 'object') {
+            this.columnVisibility = parsed
+            return
+          }
         } catch (e) {
-          console.error("Could not parse column visibility from localStorage", e);
-          savedVisibility = {};
+          console.error('Error parsing saved column visibility:', e)
         }
       }
+      // Falls nichts gespeichert oder Fehler: initialisiere
+      this.initializeColumnVisibility()
+    },
 
+    initializeColumnVisibility() {
+      const visibility = {}
       Object.keys(this.columns).forEach(view => {
-        const defaultViewVisibility = {};
+        visibility[view] = {}
         this.columns[view].forEach(col => {
-          defaultViewVisibility[col] = true;
-        });
-
-        const savedViewVisibility = savedVisibility[view] || {};
-
-        this.columnVisibility[view] = { ...defaultViewVisibility, ...savedViewVisibility };
-      });
+          visibility[view][col] = true  // Alle auf true setzen
+        })
+      })
+      this.columnVisibility = visibility
+      this.saveColumnVisibility()
     },
 
     saveColumnVisibility() {

@@ -1,4 +1,5 @@
 ![Build Status](https://github.com/TGM-HIT/insy5-informationssysteme-vue-pwa-insy_pwa_koenig_schieder_wiedenegger/actions/workflows/gradle.yml/badge.svg?branch=main)
+![Coverage](.github/badges/jacoco.svg)
 
 ## How to use
 
